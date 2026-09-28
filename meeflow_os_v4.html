@@ -1,0 +1,2687 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MeeFlow OS">
+<meta name="theme-color" content="#0f172a">
+<title>MeeFlow OS – ระบบจัดการธุรกิจครบวงจร</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<style>
+body { font-family: 'Prompt', 'Sarabun', sans-serif; }
+.editable-input { background:transparent; border:1px solid transparent; border-radius:3px; padding:1px 3px; transition:all .15s; width:100%; }
+.editable-input:hover { border-color:#cbd5e1; background:#f8fafc; }
+.editable-input:focus { border-color:#2563eb; background:#fff; outline:none; box-shadow:0 0 0 2px rgba(37,99,235,.15); }
+.editable-textarea { resize:vertical; min-height:22px; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+input[type="number"] { -moz-appearance:textfield; }
+.a4-page { width:210mm; min-height:297mm; padding:10mm 12mm 0 12mm; margin:0 auto; background:white; box-shadow:0 8px 24px rgba(0,0,0,.12); box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+.items-table-wrapper { border:1px solid #cbd5e1; border-radius:6px; overflow:hidden; min-height:280px; flex-grow:1; }
+.items-table { width:100%; border-collapse:collapse; }
+.items-table th { font-size:11px; font-weight:600; padding:6px 8px; border-right:1px solid rgba(255,255,255,.2); }
+.items-table td { border-right:1px solid #e2e8f0; padding:3px 5px; }
+.items-table td:last-child { border-right:none; }
+.nav-item { width:100%; display:flex; align-items:center; padding:.65rem .85rem; border-radius:.65rem; transition:all .2s; font-size:.85rem; font-weight:500; cursor:pointer; border:none; text-align:left; }
+.nav-item.active { background:#1d4ed8; color:white; }
+.nav-item:not(.active) { color:#94a3b8; }
+.nav-item:not(.active):hover { background:#1e293b; color:white; }
+.kpi-card { background:white; border-radius:1rem; padding:1.1rem 1.25rem; box-shadow:0 1px 3px rgba(0,0,0,.08); border:1px solid #f1f5f9; }
+.section-view { display:none; }
+.section-view.active { display:block; }
+@page { size:A4 portrait; margin:0; }
+@media print {
+  html,body { width:210mm; height:297mm; margin:0; padding:0; background:white; overflow:hidden; }
+  .no-print { display:none !important; }
+  .a4-page { box-shadow:none; margin:0; width:210mm; height:297mm; max-height:297mm; padding:8mm 10mm 5mm 10mm; }
+  .editable-input { border-color:transparent !important; background:transparent !important; }
+  #app-shell { display:block !important; }
+  #sidebar { display:none !important; }
+  #main-area { padding:0 !important; }
+  #view-doc { display:block !important; }
+  section:not(#view-doc) { display:none !important; }
+}
+.pdf-exporting .no-print { display:none !important; }
+.pdf-exporting .a4-page { box-shadow:none; margin:0; width:210mm; height:297mm; max-height:297mm; padding:8mm 10mm 5mm 10mm; }
+.pdf-exporting .editable-input { border-color:transparent !important; background:transparent !important; box-shadow:none !important; }
+.bar-chart-bar { height:100%; border-radius:4px 4px 0 0; transition:height .6s ease; }
+
+/* ===== iOS / Android Safe Area ===== */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+html, body { height: 100%; overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
+body { padding-bottom: var(--sab); }
+#sidebar { padding-bottom: var(--sab); }
+.mobile-topbar { padding-top: max(0.5rem, var(--sat)); height: calc(3rem + var(--sat)); }
+/* Bottom nav for mobile */
+#bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 35;
+  background: #0f172a;
+  padding-bottom: var(--sab);
+  box-shadow: 0 -1px 0 rgba(255,255,255,.08);
+}
+@media (max-width: 767px) {
+  #bottom-nav { display: flex; }
+  #main-area { padding-bottom: calc(3.5rem + var(--sab)); }
+  .mobile-topbar { padding-top: var(--sat); }
+}
+.bn-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: .45rem 0; gap: .15rem;
+  color: #64748b; font-size: 9px; font-weight: 600; border: none;
+  background: transparent; cursor: pointer; transition: color .2s; -webkit-tap-highlight-color: transparent;
+}
+.bn-btn.active { color: #3b82f6; }
+.bn-btn i { font-size: 1.1rem; }
+/* Touch targets */
+button, [role="button"], input, select, textarea, label { -webkit-tap-highlight-color: transparent; }
+.touch-target { min-height: 44px; min-width: 44px; }
+/* GAS Status Pill */
+#gas-status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  transition: all .3s;
+}
+.gas-connected { background: #d1fae5; color: #065f46; }
+.gas-disconnected { background: #fee2e2; color: #991b1b; }
+.gas-syncing { background: #dbeafe; color: #1e40af; }
+/* Logo preview in settings */
+#set-logo-preview {
+  width: 100px; height: 70px; border-radius: 10px; border: 2px dashed #cbd5e1;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; cursor: pointer; transition: border-color .2s;
+  background: #f8fafc;
+}
+#set-logo-preview:hover { border-color: #3b82f6; }
+#set-logo-preview img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-spin { animation: spin 1s linear infinite; }
+/* Smooth scroll */
+* { scroll-behavior: smooth; }
+/* Modal scroll fix iOS */
+.modal-scroll { -webkit-overflow-scrolling: touch; overflow-y: auto; }
+</style>
+</head>
+<body class="bg-slate-100 flex h-screen overflow-hidden text-slate-800" style="height:100dvh;">
+
+<!-- ===== SIDEBAR ===== -->
+<aside id="sidebar" class="bg-slate-900 w-64 flex-shrink-0 h-full fixed md:relative z-40 flex flex-col transition-transform duration-300 -translate-x-full md:translate-x-0">
+  <div class="p-4 border-b border-slate-700/50">
+    <div class="flex items-center space-x-2.5">
+      <!-- Logo in sidebar (from settings) -->
+      <div id="sb-logo-box" class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md overflow-hidden flex-shrink-0">
+        <img id="sb-logo-img" src="" class="hidden w-full h-full object-contain p-0.5">
+        <span id="sb-logo-letter">M</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p id="sb-company-name" class="text-white font-bold text-sm leading-tight truncate">MeeFlow OS</p>
+        <p class="text-slate-400 text-[11px]">ระบบจัดการธุรกิจครบวงจร</p>
+      </div>
+    </div>
+    <!-- GAS Status -->
+    <div class="mt-2.5">
+      <span id="gas-status-pill" class="gas-disconnected">
+        <i class="fa-solid fa-circle-xmark text-[10px]"></i> ไม่ได้เชื่อม Google Sheets
+      </span>
+    </div>
+  </div>
+  <nav class="flex-1 p-3 space-y-1 overflow-y-auto mt-1">
+    <button class="nav-item active" onclick="switchView('doc')" id="nav-doc">
+      <i class="fa-solid fa-file-invoice w-5 text-center mr-2.5 text-blue-400"></i> ออกเอกสาร A4
+    </button>
+    <button class="nav-item" onclick="switchView('dashboard')" id="nav-dashboard">
+      <i class="fa-solid fa-chart-pie w-5 text-center mr-2.5 text-emerald-400"></i> ภาพรวมธุรกิจ
+    </button>
+    <button class="nav-item" onclick="switchView('history')" id="nav-history">
+      <i class="fa-solid fa-folder-open w-5 text-center mr-2.5 text-amber-400"></i> ประวัติเอกสาร
+    </button>
+    <button class="nav-item" onclick="switchView('products')" id="nav-products">
+      <i class="fa-solid fa-box-archive w-5 text-center mr-2.5 text-purple-400"></i> สินค้าและบริการ
+    </button>
+    <button class="nav-item" onclick="switchView('customers')" id="nav-customers">
+      <i class="fa-solid fa-address-book w-5 text-center mr-2.5 text-cyan-400"></i> ฐานข้อมูลลูกค้า
+    </button>
+    <button class="nav-item" onclick="switchView('cashbook')" id="nav-cashbook">
+      <i class="fa-solid fa-book w-5 text-center mr-2.5 text-rose-400"></i> บัญชีรายรับ-รายจ่าย
+    </button>
+    <button class="nav-item" onclick="switchView('settings')" id="nav-settings">
+      <i class="fa-solid fa-gear w-5 text-center mr-2.5 text-slate-400"></i> ตั้งค่าระบบ
+    </button>
+  </nav>
+  <div class="p-3 border-t border-slate-700/50">
+    <p class="text-[11px] text-slate-500 text-center" id="sb-version-txt">MeeFlow OS v4.0 · Local + GAS</p>
+    <button onclick="syncToGAS('all')" class="mt-1.5 w-full px-2 py-1.5 bg-blue-700/40 hover:bg-blue-600/60 text-blue-200 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5">
+      <i class="fa-solid fa-cloud-arrow-up text-xs"></i> ซิงค์ขึ้น Google Sheets
+    </button>
+  </div>
+</aside>
+
+<!-- Sidebar Overlay (Mobile) -->
+<div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+<!-- ===== MAIN AREA ===== -->
+<div id="main-area" class="flex-1 h-full overflow-y-auto bg-slate-100 flex flex-col min-w-0">
+
+  <!-- Mobile Topbar -->
+  <div class="md:hidden flex items-center justify-between px-4 bg-slate-900 text-white sticky top-0 z-30 flex-shrink-0 no-print mobile-topbar" style="padding-top:env(safe-area-inset-top,0px);">
+    <button onclick="toggleSidebar()" class="text-lg p-2 touch-target flex items-center justify-center"><i class="fa-solid fa-bars"></i></button>
+    <div class="flex items-center gap-2">
+      <div id="mob-logo" class="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center overflow-hidden">
+        <img id="mob-logo-img" src="" class="hidden w-full h-full object-contain">
+        <span id="mob-logo-letter" class="text-white font-bold text-xs">M</span>
+      </div>
+      <span class="font-bold text-sm" id="mob-title-txt">MeeFlow OS</span>
+    </div>
+    <button onclick="syncToGAS('all')" id="mob-sync-btn" class="p-2 touch-target flex items-center justify-center text-blue-400 hover:text-blue-300 transition-colors" title="ซิงค์ GAS">
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+    </button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- VIEW 1: DOC MAKER                                            -->
+  <!-- ============================================================ -->
+  <section id="view-doc" class="section-view active p-3 md:p-4">
+
+    <!-- Toolbar -->
+    <div class="max-w-[215mm] mx-auto bg-white rounded-xl shadow-sm p-3 mb-4 flex flex-wrap gap-2 items-center no-print border border-slate-200">
+
+      <!-- Doc Type Switcher Dropdown & Quick Selector -->
+      <div class="flex items-center bg-slate-100 rounded-lg p-1 space-x-1 flex-wrap">
+        <select id="doc-type-select" onchange="onDocTypeSelectChange(this.value)" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none">
+          <option value="QUOTATION">ใบเสนอราคา (QUOTATION)</option>
+          <option value="INVOICE">ใบแจ้งหนี้ (INVOICE)</option>
+          <option value="RECEIPT">ใบเสร็จรับเงิน (RECEIPT)</option>
+          <option value="DELIVERY">ใบส่งของ / ใบแจ้งหนี้ (DELIVERY NOTE)</option>
+          <option value="TAX_INVOICE">ใบกำกับภาษี (TAX INVOICE)</option>
+          <option value="WHT">ใบหัก ณ ที่จ่าย 50 ทวิ</option>
+        </select>
+        <span class="text-slate-300">|</span>
+        <!-- Document Status Selector -->
+        <select id="doc-status-select" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none">
+          <option value="DRAFT">📝 ฉบับร่าง</option>
+          <option value="PENDING" selected>⏳ รออนุมัติ/รอชำระ</option>
+          <option value="PAID">✅ ชำระเงินแล้ว</option>
+          <option value="CANCELLED">❌ ยกเลิก</option>
+        </select>
+      </div>
+
+      <!-- Color Theme -->
+      <div class="flex items-center space-x-1.5 ml-2">
+        <span class="text-xs text-slate-400 font-medium">ธีม:</span>
+        <button onclick="setTheme('blue')" title="น้ำเงิน" class="w-5 h-5 rounded-full bg-blue-700 ring-2 ring-offset-1 ring-blue-700 hover:scale-110 transition-transform"></button>
+        <button onclick="setTheme('rose')" title="แดง" class="w-5 h-5 rounded-full bg-rose-700 hover:scale-110 transition-transform"></button>
+        <button onclick="setTheme('emerald')" title="เขียว" class="w-5 h-5 rounded-full bg-emerald-700 hover:scale-110 transition-transform"></button>
+        <button onclick="setTheme('slate')" title="เทา" class="w-5 h-5 rounded-full bg-slate-700 hover:scale-110 transition-transform"></button>
+      </div>
+
+      <div class="flex-1"></div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="saveDoc()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center">
+          <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึก
+        </button>
+        <button onclick="createNew()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold border border-slate-300 transition-colors">
+          <i class="fa-solid fa-plus mr-1"></i> ใหม่
+        </button>
+        <button onclick="window.print()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors">
+          <i class="fa-solid fa-print mr-1"></i> พิมพ์
+        </button>
+        <button onclick="downloadPDF()" id="btn-pdf" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center">
+          <i class="fa-solid fa-file-pdf mr-1"></i> PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Edit Banner -->
+    <div id="edit-banner" class="hidden max-w-[215mm] mx-auto mb-3 bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl flex items-center justify-between no-print">
+      <div class="flex items-center space-x-2 text-xs font-semibold text-amber-800">
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+        <i class="fa-solid fa-pen-to-square text-amber-600"></i>
+        <span>แก้ไขเอกสาร: <strong id="banner-docno" class="font-mono underline"></strong></span>
+      </div>
+      <button onclick="createNew()" class="text-xs bg-amber-200 hover:bg-amber-300 text-amber-900 px-3 py-1 rounded-lg font-semibold">
+        <i class="fa-solid fa-plus mr-1"></i> เอกสารใหม่
+      </button>
+    </div>
+
+    <!-- A4 Paper -->
+    <div class="overflow-x-auto pb-6">
+    <div id="a4-paper" class="a4-page text-slate-800 font-document">
+      <div class="flex-1 flex flex-col">
+
+        <!-- Header Row: Logo + Title -->
+        <div class="flex justify-between items-center mb-1 pb-1">
+          <!-- Logo -->
+          <div class="relative group">
+            <div id="logo-box" onclick="document.getElementById('logo-input').click()" class="w-28 h-10 border border-dashed border-slate-300 rounded flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-all overflow-hidden bg-slate-50">
+              <img id="logo-img" src="" class="hidden w-full h-full object-contain p-0.5">
+              <div id="logo-ph" class="text-center no-print">
+                <i class="fa-solid fa-cloud-arrow-up text-slate-300 block text-base"></i>
+                <p class="text-[9px] text-slate-400">โลโก้</p>
+              </div>
+            </div>
+            <input type="file" id="logo-input" accept="image/*" class="hidden" onchange="uploadLogo(event)">
+            <button id="logo-del" onclick="removeLogo(event)" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white rounded-full w-4 h-4 text-[9px] flex items-center justify-center shadow no-print">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- Doc Title -->
+          <div class="text-center">
+            <h1 id="doc-title-th" class="text-2xl font-bold tracking-tight text-blue-800">ใบเสนอราคา</h1>
+            <p id="doc-title-en" class="text-[9px] font-semibold tracking-widest uppercase text-slate-400">QUOTATION</p>
+          </div>
+
+          <div class="w-28 text-right">
+            <span id="doc-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">⏳ รออนุมัติ/รอชำระ</span>
+          </div>
+        </div>
+
+        <!-- Issuer Info -->
+        <div id="issuer-bar" class="border-t-2 border-slate-700 pt-1.5 pb-1 text-[11px] space-y-1">
+          <div class="grid grid-cols-12 gap-2 items-baseline">
+            <div class="col-span-4 flex items-center space-x-1">
+              <span class="font-bold text-slate-700 shrink-0">ผู้ออกใบ:</span>
+              <input type="text" id="issuer-name" class="editable-input font-bold text-slate-900 text-[11px]" value="Mee Flow Electric">
+            </div>
+            <div class="col-span-4 flex items-center space-x-1">
+              <span class="font-bold text-slate-700 shrink-0">เลขผู้เสียภาษี:</span>
+              <input type="text" id="issuer-taxid" class="editable-input text-[11px]" placeholder="-">
+            </div>
+            <div class="col-span-4 flex items-center space-x-1">
+              <span class="font-bold text-slate-700 shrink-0">โทร:</span>
+              <input type="text" id="issuer-phone" class="editable-input text-[11px] w-28" value="083-887-6542">
+              <span class="font-bold text-slate-700 shrink-0 ml-1">อีเมล:</span>
+              <input type="text" id="issuer-email" class="editable-input text-[11px] flex-1" placeholder="-">
+            </div>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="font-bold text-slate-700 shrink-0">ที่อยู่:</span>
+            <input type="text" id="issuer-address" class="editable-input text-[10.5px] text-slate-600 w-full" value="56/1 ม.3 ต.ปุยุด อ.เมือง จ.ปัตตานี">
+          </div>
+        </div>
+
+        <!-- Customer + Doc Meta -->
+        <div class="border-t border-b border-slate-300 py-1.5 my-1 text-[11px] grid grid-cols-12 gap-3">
+          <div class="col-span-7 space-y-1">
+            <div class="flex items-center justify-between">
+              <div class="flex items-baseline space-x-1 flex-1">
+                <span class="font-bold text-slate-700 shrink-0">นามลูกค้า:</span>
+                <input type="text" id="cust-name" class="editable-input font-bold text-slate-900 text-[11px]" placeholder="ชื่อลูกค้า/บริษัท...">
+              </div>
+              <!-- Quick Select Customer Button -->
+              <button onclick="openCustomerPicker()" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-blue-700 px-1.5 py-0.5 rounded border border-slate-300 ml-1 no-print">
+                <i class="fa-solid fa-address-book mr-1"></i>เลือกลูกค้า
+              </button>
+            </div>
+            <div class="flex items-baseline space-x-1">
+              <span class="font-bold text-slate-700 shrink-0">ที่อยู่:</span>
+              <input type="text" id="cust-address" class="editable-input text-slate-600 text-[10.5px] w-full" placeholder="ที่อยู่ลูกค้า...">
+            </div>
+            <div class="flex items-baseline space-x-1">
+              <span class="font-bold text-slate-700 shrink-0">เลขผู้เสียภาษี:</span>
+              <input type="text" id="cust-taxid" class="editable-input font-mono text-[10.5px] w-36" placeholder="-">
+              <span class="font-bold text-slate-700 shrink-0 ml-2">ผู้ติดต่อ:</span>
+              <input type="text" id="cust-contact" class="editable-input text-[10.5px] flex-1" placeholder="-">
+            </div>
+          </div>
+          <div class="col-span-5 space-y-1 pl-2 border-l border-slate-200 text-right">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-slate-700" id="lbl-docno">เลขที่เอกสาร:</span>
+              <input type="text" id="doc-no" class="editable-input font-mono font-medium text-right text-slate-900 w-32" value="QT-2026-001">
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-slate-700">วันที่:</span>
+              <input type="date" id="doc-date" class="editable-input text-right text-slate-800 w-32">
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-slate-700" id="lbl-duedate">ยืนราคาถึง:</span>
+              <input type="date" id="doc-duedate" class="editable-input text-right text-slate-800 w-32">
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-slate-700">ชื่องาน:</span>
+              <input type="text" id="doc-project" class="editable-input text-right font-medium text-blue-700 w-44" placeholder="ระบุชื่องาน...">
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="mt-1.5 flex-1 flex flex-col justify-between">
+          <div>
+            <div class="items-table-wrapper">
+              <table class="items-table">
+                <thead>
+                  <tr id="tbl-header" class="bg-blue-800 text-white text-xs">
+                    <th class="w-9 text-center">ลำดับ</th>
+                    <th class="text-left">รายการ</th>
+                    <th class="w-16 text-center">จำนวน</th>
+                    <th class="w-24 text-right">ราคา/หน่วย</th>
+                    <th class="w-28 text-right">ยอดรวม</th>
+                    <th class="w-7 no-print"></th>
+                  </tr>
+                </thead>
+                <tbody id="items-tbody" class="text-xs divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between no-print">
+              <div class="flex items-center space-x-2">
+                <button onclick="addRow(false)" class="px-2.5 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-xs font-semibold border border-blue-200 cursor-pointer flex items-center">
+                  <i class="fa-solid fa-plus-circle mr-1"></i> เพิ่มรายการ
+                </button>
+                <button onclick="addRow(true)" class="px-2.5 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded text-xs font-semibold border border-slate-300 cursor-pointer flex items-center">
+                  <i class="fa-solid fa-heading mr-1"></i> เพิ่มหัวข้อ
+                </button>
+              </div>
+              <button onclick="openProductPicker()" class="px-2.5 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded text-xs font-semibold border border-purple-200 cursor-pointer flex items-center">
+                <i class="fa-solid fa-box-archive mr-1"></i> เลือกจากคลังสินค้า
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="mt-2 pt-1 border-t border-slate-300 grid grid-cols-12 gap-4 items-start">
+            <div class="col-span-6 space-y-1.5">
+              <div class="bg-slate-50 px-2.5 py-1.5 rounded border border-slate-200 flex items-center space-x-2">
+                <span class="text-[10.5px] font-bold text-slate-600 shrink-0">จำนวนเงินอักษร:</span>
+                <span id="baht-text" class="text-[10.5px] font-semibold text-blue-800 bg-white px-2 py-0.5 rounded border border-slate-200 flex-1 text-center">( ศูนย์บาทถ้วน )</span>
+              </div>
+            </div>
+            <div class="col-span-6 bg-slate-50 p-2 rounded-lg border border-slate-200 space-y-1 text-xs">
+              <div class="flex justify-between text-slate-700">
+                <span class="font-medium">รวมเป็นเงิน:</span>
+                <span id="sum-subtotal" class="font-mono font-semibold text-slate-900">0.00</span>
+              </div>
+              <div class="flex justify-between text-slate-700 items-center">
+                <div class="flex items-center space-x-1">
+                  <span class="font-medium">ส่วนลด:</span>
+                  <select id="discount-type" onchange="calcTotals()" class="bg-white border border-slate-300 text-[10px] rounded px-1 py-0 focus:outline-none">
+                    <option value="THB" selected>บาท</option>
+                    <option value="PERCENT">%</option>
+                  </select>
+                </div>
+                <div class="flex items-center space-x-1 w-28 justify-end">
+                  <input type="number" id="discount" oninput="calcTotals()" class="editable-input text-right font-mono text-slate-800" value="0">
+                  <span id="discount-unit" class="text-slate-400 text-[10px]">บาท</span>
+                </div>
+              </div>
+              <div class="flex justify-between text-slate-600 text-[10.5px] pt-0.5 border-t border-slate-200">
+                <span>หลังหักส่วนลด:</span>
+                <span id="sum-after-discount" class="font-mono">0.00</span>
+              </div>
+              <div class="flex justify-between text-slate-700 pt-0.5">
+                <label class="flex items-center cursor-pointer">
+                  <input type="checkbox" id="vat-on" onchange="calcTotals()" class="w-3 h-3 mr-1 rounded">
+                  <span class="font-medium text-[11px]">VAT 7%:</span>
+                </label>
+                <span id="sum-vat" class="font-mono font-semibold text-slate-800">0.00</span>
+              </div>
+              <div class="flex justify-between text-slate-700 pt-0.5 border-t border-slate-200">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" id="wht-on" onchange="calcTotals()" class="w-3 h-3 rounded">
+                  <span class="font-medium text-[11px]">หัก ณ ที่จ่าย</span>
+                  <select id="wht-rate" onchange="calcTotals()" class="bg-white border border-slate-300 text-[10px] rounded px-1 py-0 focus:outline-none">
+                    <option value="3" selected>3%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option>
+                  </select>
+                </div>
+                <span id="sum-wht" class="font-mono font-semibold text-rose-600">-0.00</span>
+              </div>
+              <div id="grand-box" class="mt-1 p-1.5 bg-blue-800 text-white rounded flex justify-between items-center shadow-sm">
+                <span class="font-bold text-xs">จำนวนเงินรวมทั้งสิ้น</span>
+                <span id="sum-grand" class="text-sm font-bold font-mono">0.00</span>
+              </div>
+              <div id="net-row" class="hidden flex justify-between items-center pt-0.5 text-xs font-bold text-slate-800">
+                <span>ยอดชำระสุทธิ:</span>
+                <span id="sum-net" class="font-mono text-rose-700">0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer: Terms + Signature + Payment -->
+      <div class="mt-3">
+        <div class="grid grid-cols-12 gap-4 items-end pb-2.5 text-xs">
+          <div class="col-span-6 space-y-1">
+            <p class="font-bold text-slate-800 text-[11px]">เงื่อนไข / หมายเหตุ:</p>
+            <textarea id="doc-remarks" class="editable-input editable-textarea w-full text-[10.5px] leading-tight text-slate-600" rows="3" placeholder="ระบุเงื่อนไขเพิ่มเติม..."></textarea>
+          </div>
+          <div class="col-span-6 text-center space-y-2">
+            <p class="font-bold text-slate-800 text-[11px]">ขอแสดงความนับถือ</p>
+            <div class="border-b border-dotted border-slate-400 w-3/4 mx-auto pt-5"></div>
+            <div class="flex items-center justify-center space-x-1 text-[10.5px] text-slate-500">
+              <span>วันที่</span>
+              <input type="text" class="editable-input w-28 text-center" value="......./......./.......">
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Bar -->
+        <div id="payment-bar" class="bg-blue-800 text-white rounded-t-lg px-4 py-2 flex justify-between items-center text-[10.5px]">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded text-[9.5px]">ช่องทางชำระเงิน</span>
+            <input type="text" id="bank-name" class="editable-input font-medium text-white placeholder-white/70 w-44" value="ธนาคารกสิกรไทย (KBANK)">
+          </div>
+          <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-1">
+              <span>ชื่อบัญชี:</span>
+              <input type="text" id="bank-accname" class="editable-input font-medium text-white w-32" value="Mee Flow Electric">
+            </div>
+            <div class="flex items-center space-x-1">
+              <span>เลขที่บัญชี:</span>
+              <input type="text" id="bank-accno" class="editable-input font-mono font-bold text-amber-200 w-32" value="123-4-56789-0">
+            </div>
+            <!-- QR Code -->
+            <div class="relative group ml-2">
+              <div id="qr-box" onclick="document.getElementById('qr-input').click()" class="w-12 h-12 bg-white/10 hover:bg-white/20 border border-dashed border-white/40 rounded flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all" title="อัปโหลด QR Code">
+                <img id="qr-img" src="" class="hidden w-full h-full object-contain rounded bg-white p-0.5">
+                <div id="qr-ph" class="text-center text-white/90 no-print">
+                  <i class="fa-solid fa-qrcode text-sm block"></i>
+                  <span class="text-[7.5px] leading-tight block">+ QR</span>
+                </div>
+              </div>
+              <input type="file" id="qr-input" accept="image/*" class="hidden" onchange="uploadQR(event)">
+              <button id="qr-del" onclick="removeQR(event)" class="hidden absolute -top-1.5 -right-1.5 bg-rose-600 text-white border border-white rounded-full w-4 h-4 text-[9px] flex items-center justify-center shadow no-print">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /a4-paper -->
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- VIEW 2: DASHBOARD                                            -->
+  <!-- ============================================================ -->
+  <section id="view-dashboard" class="section-view p-4 md:p-6 max-w-5xl mx-auto w-full">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-chart-pie text-emerald-600 mr-2"></i>ภาพรวมธุรกิจ & รายรับ</h2>
+      <select id="dash-year" onchange="renderDashboard()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"></select>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="kpi-card">
+        <p class="text-xs text-slate-500 font-medium mb-1">รายได้รวมปีนี้</p>
+        <p id="kpi-revenue" class="text-2xl font-bold text-slate-900">฿0</p>
+        <p class="text-xs text-emerald-600 mt-1 font-medium" id="kpi-revenue-sub">จาก 0 รายการ</p>
+      </div>
+      <div class="kpi-card">
+        <p class="text-xs text-slate-500 font-medium mb-1">ใบเสนอราคา</p>
+        <p id="kpi-qt" class="text-2xl font-bold text-slate-900">0</p>
+        <p class="text-xs text-blue-600 mt-1 font-medium">รายการ</p>
+      </div>
+      <div class="kpi-card">
+        <p class="text-xs text-slate-500 font-medium mb-1">ใบแจ้งหนี้ / ใบกำกับ</p>
+        <p id="kpi-inv" class="text-2xl font-bold text-slate-900">0</p>
+        <p class="text-xs text-amber-600 mt-1 font-medium">รายการ</p>
+      </div>
+      <div class="kpi-card">
+        <p class="text-xs text-slate-500 font-medium mb-1">ใบเสร็จรับเงิน</p>
+        <p id="kpi-rec" class="text-2xl font-bold text-slate-900">0</p>
+        <p class="text-xs text-emerald-600 mt-1 font-medium">รายการ</p>
+      </div>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
+      <h3 class="text-sm font-bold text-slate-700 mb-4">รายได้รายเดือน (ใบแจ้งหนี้ / ใบเสร็จ)</h3>
+      <div id="bar-chart" class="flex items-end gap-1.5 h-40">
+        <!-- Dynamic bars -->
+      </div>
+      <div class="flex gap-1.5 mt-1" id="bar-labels"></div>
+    </div>
+
+    <!-- Top Customers -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <h3 class="text-sm font-bold text-slate-700 mb-3">ลูกค้าที่มียอดสั่งซื้อสูงสุด</h3>
+      <div id="top-customers" class="space-y-2.5"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- VIEW 3: HISTORY                                              -->
+  <!-- ============================================================ -->
+  <section id="view-history" class="section-view p-4 md:p-6 max-w-5xl mx-auto w-full">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-folder-open text-amber-500 mr-2"></i>ประวัติเอกสาร <span id="hist-count-badge" class="text-sm text-slate-400 font-normal"></span></h2>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="exportHistoryExcel()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold flex items-center shadow-sm transition-colors">
+          <i class="fa-solid fa-file-excel mr-1.5"></i> Export Excel (.xlsx)
+        </button>
+        <label class="cursor-pointer px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center shadow-sm transition-colors">
+          <i class="fa-solid fa-file-import mr-1.5"></i> นำเข้า JSON
+          <input type="file" accept=".json" class="hidden" onchange="importJSON(event)">
+        </label>
+        <button onclick="exportJSON()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold border border-slate-300 transition-colors">
+          <i class="fa-solid fa-download mr-1"></i> สำรอง JSON
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      <div class="relative flex-1 min-w-48">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+        <input type="text" id="hist-search" oninput="renderHistory()" placeholder="ค้นหาเลขที่, ลูกค้า, ชื่องาน..." class="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+      </div>
+      <div class="flex bg-slate-100 p-1 rounded-lg gap-1 text-xs font-medium overflow-x-auto">
+        <button onclick="setHistFilter('ALL')" id="hf-all" class="hist-filter-btn px-3 py-1 rounded bg-white text-blue-700 shadow-sm font-bold">ทั้งหมด</button>
+        <button onclick="setHistFilter('ใบเสนอราคา')" id="hf-qt" class="hist-filter-btn px-3 py-1 rounded text-slate-500 hover:text-slate-800">เสนอราคา</button>
+        <button onclick="setHistFilter('ใบแจ้งหนี้')" id="hf-inv" class="hist-filter-btn px-3 py-1 rounded text-slate-500 hover:text-slate-800">แจ้งหนี้</button>
+        <button onclick="setHistFilter('ใบเสร็จรับเงิน')" id="hf-rec" class="hist-filter-btn px-3 py-1 rounded text-slate-500 hover:text-slate-800">ใบเสร็จ</button>
+      </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">ประเภท / เลขที่</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">ลูกค้า / ชื่องาน</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">สถานะ</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">วันที่</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs text-right">ยอดรวม</th>
+            <th class="px-4 py-3 text-xs w-28 text-center">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="hist-tbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+      <div id="hist-empty" class="hidden text-center py-12 text-slate-400">
+        <i class="fa-solid fa-folder-open text-3xl mb-3 block text-slate-200"></i>
+        <p class="text-sm">ยังไม่มีเอกสารที่บันทึกไว้</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- VIEW 4: PRODUCTS & INVENTORY                                 -->
+  <!-- ============================================================ -->
+  <section id="view-products" class="section-view p-4 md:p-6 max-w-5xl mx-auto w-full">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-box-archive text-purple-600 mr-2"></i>สินค้า & คลังสินค้า</h2>
+      <button onclick="openProductModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">
+        <i class="fa-solid fa-plus mr-1.5"></i> เพิ่มสินค้าใหม่
+      </button>
+    </div>
+
+    <!-- Product Search -->
+    <div class="mb-4">
+      <input type="text" id="prod-search" oninput="renderProducts()" placeholder="ค้นหารหัสสินค้า, ชื่อสินค้า, หมวดหมู่..." class="w-full max-w-md px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white">
+    </div>
+
+    <!-- Products Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">รหัสสินค้า</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">ชื่อสินค้า / บริการ</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">หมวดหมู่</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs text-right">ราคา/หน่วย</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs text-center">คงเหลือในสต็อก</th>
+            <th class="px-4 py-3 text-xs w-24 text-center">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="products-tbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+      <div id="products-empty" class="text-center py-12 text-slate-400">
+        <i class="fa-solid fa-box-open text-3xl mb-3 block text-slate-200"></i>
+        <p class="text-sm">ยังไม่มีรายการสินค้าในระบบ</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- VIEW 5: CUSTOMER DATABASE (CRM)                             -->
+  <!-- ============================================================ -->
+  <section id="view-customers" class="section-view p-4 md:p-6 max-w-5xl mx-auto w-full">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-address-book text-cyan-600 mr-2"></i>ฐานข้อมูลลูกค้า (CRM)</h2>
+      <button onclick="openCustomerModal()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">
+        <i class="fa-solid fa-plus mr-1.5"></i> เพิ่มลูกค้าใหม่
+      </button>
+    </div>
+
+    <!-- Customer Search -->
+    <div class="mb-4">
+      <input type="text" id="cust-search" oninput="renderCustomers()" placeholder="ค้นชื่อลูกค้า, บริษัท, เบอร์โทร, เลขผู้เสียภาษี..." class="w-full max-w-md px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none bg-white">
+    </div>
+
+    <!-- Customers Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">ชื่อลูกค้า / บริษัท</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">ที่อยู่</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">เลขผู้เสียภาษี</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs">ผู้ติดต่อ / โทร</th>
+            <th class="px-4 py-3 text-xs w-28 text-center">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="customers-tbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+      <div id="customers-empty" class="text-center py-12 text-slate-400">
+        <i class="fa-solid fa-users text-3xl mb-3 block text-slate-200"></i>
+        <p class="text-sm">ยังไม่มีข้อมูลลูกค้าในระบบ</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- VIEW 6: CASHBOOK                                             -->
+  <!-- ============================================================ -->
+  <section id="view-cashbook" class="section-view p-4 md:p-6 max-w-5xl mx-auto w-full">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-book text-rose-500 mr-2"></i>บัญชีรายรับ–รายจ่าย</h2>
+      <div class="flex items-center gap-2">
+        <button onclick="exportCashbookExcel()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold flex items-center shadow-sm transition-colors">
+          <i class="fa-solid fa-file-excel mr-1.5"></i> Export Excel (.xlsx)
+        </button>
+        <button onclick="openCashModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">
+          <i class="fa-solid fa-plus mr-1.5"></i> บันทึกรายการ
+        </button>
+      </div>
+    </div>
+
+    <!-- Cash KPI -->
+    <div class="grid grid-cols-3 gap-4 mb-5">
+      <div class="kpi-card border-l-4 border-emerald-500">
+        <p class="text-xs text-slate-500 mb-1">รายรับรวม</p>
+        <p id="cb-income" class="text-xl font-bold text-emerald-700">฿0.00</p>
+      </div>
+      <div class="kpi-card border-l-4 border-rose-500">
+        <p class="text-xs text-slate-500 mb-1">รายจ่ายรวม</p>
+        <p id="cb-expense" class="text-xl font-bold text-rose-700">฿0.00</p>
+      </div>
+      <div class="kpi-card border-l-4 border-blue-500">
+        <p class="text-xs text-slate-500 mb-1">คงเหลือสุทธิ</p>
+        <p id="cb-net" class="text-xl font-bold text-blue-700">฿0.00</p>
+      </div>
+    </div>
+
+    <!-- Cash Ledger Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs text-left">วันที่</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs text-left">รายการ</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs text-left">หมวดหมู่</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs text-right">รายรับ</th>
+            <th class="px-4 py-3 text-slate-600 font-semibold text-xs text-right">รายจ่าย</th>
+            <th class="px-4 py-3 text-xs w-12 text-center">ลบ</th>
+          </tr>
+        </thead>
+        <tbody id="cash-tbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+      <div id="cash-empty" class="text-center py-12 text-slate-400">
+        <i class="fa-solid fa-book text-3xl mb-3 block text-slate-200"></i>
+        <p class="text-sm">ยังไม่มีรายการบัญชี — กดปุ่ม "บันทึกรายการ" ด้านบน</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- VIEW 7: SETTINGS                                             -->
+  <!-- ============================================================ -->
+  <section id="view-settings" class="section-view p-4 md:p-6 max-w-3xl mx-auto w-full">
+    <h2 class="text-xl font-bold text-slate-800 mb-5"><i class="fa-solid fa-gear text-slate-600 mr-2"></i>ตั้งค่าระบบ</h2>
+
+    <div class="space-y-5">
+
+      <!-- ── บริษัท + โลโก้ ── -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <h3 class="font-bold text-base mb-4 text-slate-800"><i class="fa-solid fa-building text-blue-600 mr-2"></i>ข้อมูลบริษัท / ผู้ออกเอกสาร</h3>
+
+        <!-- Logo Upload Row -->
+        <div class="flex items-start gap-5 mb-4 pb-4 border-b border-slate-100">
+          <div>
+            <p class="text-xs text-slate-500 font-medium mb-2">โลโก้บริษัท</p>
+            <div id="set-logo-preview" onclick="document.getElementById('set-logo-input').click()" title="คลิกเพื่ออัปโหลดโลโก้">
+              <img id="set-logo-img" src="" class="hidden w-full h-full object-contain">
+              <div id="set-logo-ph" class="text-center text-slate-400">
+                <i class="fa-solid fa-image text-2xl block mb-1"></i>
+                <span class="text-[10px]">คลิกเพื่ออัปโหลด</span>
+              </div>
+            </div>
+            <input type="file" id="set-logo-input" accept="image/*" class="hidden" onchange="uploadSettingsLogo(event)">
+            <button id="set-logo-del-btn" onclick="removeSettingsLogo()" class="hidden mt-1 text-xs text-rose-500 hover:text-rose-700 font-medium flex items-center gap-1 touch-target">
+              <i class="fa-solid fa-trash-can text-[10px]"></i> ลบโลโก้
+            </button>
+          </div>
+          <div class="flex-1 space-y-1 text-xs text-slate-500">
+            <p class="font-semibold text-slate-700">คำแนะนำสำหรับโลโก้</p>
+            <p>• รองรับ PNG, JPG, WebP, SVG</p>
+            <p>• ขนาดแนะนำ 300×100 px ขึ้นไป</p>
+            <p>• โลโก้จะแสดงในเอกสาร A4 ทุกใบ</p>
+            <p>• บันทึกไว้ใน Browser อัตโนมัติ</p>
+          </div>
+        </div>
+
+        <!-- Company Info -->
+        <div class="grid grid-cols-1 gap-3 text-sm">
+          <div><label class="block text-xs text-slate-500 mb-1 font-medium">ชื่อบริษัท/ร้านค้า <span class="text-rose-500">*</span></label>
+            <input type="text" id="set-name" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value="Mee Flow Electric"></div>
+          <div><label class="block text-xs text-slate-500 mb-1 font-medium">ที่อยู่</label>
+            <input type="text" id="set-address" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value="56/1 ม.3 ต.ปุยุด อ.เมือง จ.ปัตตานี"></div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-xs text-slate-500 mb-1 font-medium">โทรศัพท์</label>
+              <input type="text" id="set-phone" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value="083-887-6542"></div>
+            <div><label class="block text-xs text-slate-500 mb-1 font-medium">อีเมล</label>
+              <input type="text" id="set-email" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="-"></div>
+          </div>
+          <div><label class="block text-xs text-slate-500 mb-1 font-medium">เลขประจำตัวผู้เสียภาษี (13 หลัก)</label>
+            <input type="text" id="set-taxid" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm" placeholder="-" maxlength="13"></div>
+          <div><label class="block text-xs text-slate-500 mb-1 font-medium">เว็บไซต์</label>
+            <input type="text" id="set-website" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="https://..."></div>
+        </div>
+        <button onclick="applySettings()" class="mt-4 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors touch-target flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i> บันทึกการตั้งค่า
+        </button>
+      </div>
+
+      <!-- ── Google Apps Script (GAS) ── -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-start justify-between mb-1">
+          <h3 class="font-bold text-base text-slate-800"><i class="fa-brands fa-google text-red-500 mr-2"></i>เชื่อมต่อ Google Sheets ผ่าน GAS</h3>
+          <span id="gas-status-pill2" class="gas-disconnected text-[11px] font-semibold px-2 py-0.5 rounded-full">
+            <i class="fa-solid fa-circle-xmark text-[10px]"></i> Offline
+          </span>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">ข้อมูลจะถูกซิงค์ขึ้น Google Sheets อัตโนมัติ ใช้งานได้ทุกอุปกรณ์</p>
+
+        <!-- GAS URL Input -->
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1 font-medium">
+              GAS Web App URL <span class="text-rose-500">*</span>
+              <a href="#" onclick="showGASGuide()" class="ml-1 text-blue-500 hover:underline">(วิธีรับ URL)</a>
+            </label>
+            <div class="flex gap-2">
+              <input type="url" id="set-gas-url"
+                class="flex-1 border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono"
+                placeholder="https://script.google.com/macros/s/xxxxxx/exec">
+              <button onclick="testGASConnection()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold border border-slate-300 transition-colors touch-target whitespace-nowrap">
+                <i class="fa-solid fa-plug mr-1"></i> ทดสอบ
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-500 mb-1 font-medium">Google Sheets ID (ไม่บังคับ — ใส่เพื่อตรวจสอบ)</label>
+            <input type="text" id="set-sheet-id"
+              class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono"
+              placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+          </div>
+
+          <!-- Sync Options -->
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" id="gas-auto-sync" class="w-4 h-4 rounded text-blue-600" checked>
+              <span class="text-slate-700 text-xs font-medium">ซิงค์อัตโนมัติเมื่อบันทึก</span>
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" id="gas-sync-docs" class="w-4 h-4 rounded text-blue-600" checked>
+              <span class="text-slate-700 text-xs font-medium">ซิงค์เอกสาร</span>
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" id="gas-sync-cash" class="w-4 h-4 rounded text-blue-600" checked>
+              <span class="text-slate-700 text-xs font-medium">ซิงค์บัญชีรายรับ-จ่าย</span>
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" id="gas-sync-customers" class="w-4 h-4 rounded text-blue-600" checked>
+              <span class="text-slate-700 text-xs font-medium">ซิงค์ลูกค้า</span>
+            </label>
+          </div>
+
+          <!-- GAS Action Buttons -->
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button onclick="saveGASSettings()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors touch-target">
+              <i class="fa-brands fa-google mr-1"></i> บันทึก GAS URL
+            </button>
+            <button onclick="syncToGAS('all')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors touch-target flex items-center gap-1.5" id="btn-sync-all">
+              <i class="fa-solid fa-cloud-arrow-up"></i> ซิงค์ข้อมูลทั้งหมด
+            </button>
+            <button onclick="loadFromGAS()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors touch-target flex items-center gap-1.5">
+              <i class="fa-solid fa-cloud-arrow-down"></i> โหลดจาก Cloud
+            </button>
+          </div>
+
+          <!-- Last Sync info -->
+          <div id="gas-last-sync" class="text-xs text-slate-400 hidden">
+            <i class="fa-solid fa-clock-rotate-left mr-1"></i> ซิงค์ล่าสุด: <span id="gas-last-sync-time">-</span>
+          </div>
+        </div>
+
+        <!-- GAS Setup Guide (collapsible) -->
+        <div class="mt-4 border-t border-slate-100 pt-4">
+          <button onclick="toggleGASGuide()" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-book-open"></i> <span id="gas-guide-toggle-txt">ดูวิธีตั้งค่า Google Apps Script ▾</span>
+          </button>
+          <div id="gas-guide-box" class="hidden mt-3 bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-700 space-y-2 leading-relaxed">
+            <p class="font-bold text-slate-800 text-sm">📋 วิธีตั้งค่า GAS ทีละขั้นตอน</p>
+            <div class="space-y-1.5">
+              <p><span class="font-bold text-blue-700">ขั้นที่ 1</span> · เปิด <a href="https://sheets.google.com" target="_blank" class="underline text-blue-600">Google Sheets</a> → สร้าง Spreadsheet ใหม่</p>
+              <p><span class="font-bold text-blue-700">ขั้นที่ 2</span> · เมนู <strong>Extensions → Apps Script</strong></p>
+              <p><span class="font-bold text-blue-700">ขั้นที่ 3</span> · ลบโค้ดเดิมออก → วางโค้ด <strong>Code.gs</strong> ด้านล่าง</p>
+              <p><span class="font-bold text-blue-700">ขั้นที่ 4</span> · กด <strong>Deploy → New deployment</strong></p>
+              <p><span class="font-bold text-blue-700">ขั้นที่ 5</span> · เลือก Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Who has access: <strong>Anyone</strong></p>
+              <p><span class="font-bold text-blue-700">ขั้นที่ 6</span> · กด <strong>Deploy</strong> → คัดลอก URL มาวางด้านบน</p>
+              <p><span class="font-bold text-blue-700">ขั้นที่ 7</span> · กด <strong>"ทดสอบ"</strong> ให้แสดง <span class="text-emerald-600 font-bold">✅ เชื่อมต่อสำเร็จ</span></p>
+            </div>
+            <div class="mt-3 bg-slate-800 text-emerald-300 rounded-lg p-3 font-mono text-[10px] leading-relaxed overflow-x-auto">
+              <p class="text-slate-400 mb-1">// ===== Code.gs สำหรับ Google Apps Script =====</p>
+              <pre id="gas-code-preview" class="whitespace-pre-wrap break-all">// วางโค้ดนี้ใน Apps Script แล้วกด Deploy</pre>
+            </div>
+            <button onclick="copyGASCode()" class="mt-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold touch-target">
+              <i class="fa-solid fa-copy mr-1"></i> คัดลอกโค้ด Code.gs
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── จัดการข้อมูล ── -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <h3 class="font-bold text-base mb-2 text-slate-800"><i class="fa-solid fa-database text-slate-500 mr-2"></i>จัดการข้อมูล</h3>
+        <p class="text-xs text-slate-400 mb-3">ข้อมูลทั้งหมดเก็บใน Browser localStorage พร้อมซิงค์ขึ้น Google Sheets</p>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="exportJSON()" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-colors touch-target">
+            <i class="fa-solid fa-download mr-1"></i> สำรอง JSON
+          </button>
+          <label class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold cursor-pointer transition-colors touch-target">
+            <i class="fa-solid fa-file-import mr-1"></i> นำเข้า JSON
+            <input type="file" accept=".json" class="hidden" onchange="importJSON(event)">
+          </label>
+          <button onclick="clearAllData()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold transition-colors touch-target">
+            <i class="fa-solid fa-trash-can mr-1"></i> ล้างข้อมูลทั้งหมด
+          </button>
+        </div>
+      </div>
+
+      <!-- ── About ── -->
+      <div class="bg-gradient-to-br from-blue-900 to-slate-900 rounded-2xl p-5 text-white">
+        <p class="font-bold text-base mb-1">🚀 MeeFlow OS v4.0 Pro</p>
+        <p class="text-blue-200 text-xs mb-3">ระบบจัดการธุรกิจครบวงจร · ออกเอกสาร · บัญชี · Cloud Sync</p>
+        <div class="grid grid-cols-2 gap-2 text-xs text-blue-300">
+          <div class="flex items-center gap-1.5"><i class="fa-solid fa-check-circle text-emerald-400"></i> ออกเอกสาร A4 ทุกประเภท</div>
+          <div class="flex items-center gap-1.5"><i class="fa-solid fa-check-circle text-emerald-400"></i> Sync Google Sheets / GAS</div>
+          <div class="flex items-center gap-1.5"><i class="fa-solid fa-check-circle text-emerald-400"></i> iOS &amp; Android Ready</div>
+          <div class="flex items-center gap-1.5"><i class="fa-solid fa-check-circle text-emerald-400"></i> Export PDF / Excel</div>
+          <div class="flex items-center gap-1.5"><i class="fa-solid fa-check-circle text-emerald-400"></i> ฐานข้อมูลลูกค้า + สต็อก</div>
+          <div class="flex items-center gap-1.5"><i class="fa-solid fa-check-circle text-emerald-400"></i> Dashboard รายได้</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div><!-- /main-area -->
+
+<!-- ============================================================ -->
+<!-- MODALS                                                       -->
+<!-- ============================================================ -->
+
+<!-- PRODUCT MODAL -->
+<div id="product-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-slate-800" id="prod-modal-title"><i class="fa-solid fa-box text-purple-600 mr-2"></i>สินค้า / บริการ</h3>
+      <button onclick="closeProductModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div><label class="block text-xs text-slate-500 mb-1 font-medium">รหัสสินค้า</label>
+        <input type="text" id="pm-sku" placeholder="เช่น P-001" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"></div>
+      <div><label class="block text-xs text-slate-500 mb-1 font-medium">ชื่อสินค้า / รายการบริการ</label>
+        <input type="text" id="pm-name" placeholder="ชื่อสินค้า..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-slate-500 mb-1 font-medium">หมวดหมู่</label>
+          <input type="text" id="pm-cat" placeholder="เช่น อุปกรณ์ไฟฟ้า" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"></div>
+        <div><label class="block text-xs text-slate-500 mb-1 font-medium">หน่วยเรียก</label>
+          <input type="text" id="pm-unit" placeholder="ชุด, เครื่อง, ชิ้น" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-slate-500 mb-1 font-medium">ราคาต่อหน่วย (บาท)</label>
+          <input type="number" id="pm-price" placeholder="0.00" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"></div>
+        <div><label class="block text-xs text-slate-500 mb-1 font-medium">จำนวนคงเหลือ</label>
+          <input type="number" id="pm-stock" placeholder="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"></div>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeProductModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">ยกเลิก</button>
+      <button onclick="saveProductEntry()" class="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER MODAL -->
+<div id="customer-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-slate-800" id="cust-modal-title"><i class="fa-solid fa-address-card text-cyan-600 mr-2"></i>ข้อมูลลูกค้า</h3>
+      <button onclick="closeCustomerModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div><label class="block text-xs text-slate-500 mb-1 font-medium">ชื่อลูกค้า / ชื่อบริษัท</label>
+        <input type="text" id="cm-name" placeholder="ชื่อบริษัท หรือ ชื่อ-นามสกุล..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"></div>
+      <div><label class="block text-xs text-slate-500 mb-1 font-medium">ที่อยู่</label>
+        <input type="text" id="cm-address" placeholder="ที่อยู่ในการออกใบเสร็จ/ใบกำกับ..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-slate-500 mb-1 font-medium">เลขประจำตัวผู้เสียภาษี</label>
+          <input type="text" id="cm-taxid" placeholder="เลข 13 หลัก" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500"></div>
+        <div><label class="block text-xs text-slate-500 mb-1 font-medium">ผู้ติดต่อ / เบอร์โทร</label>
+          <input type="text" id="cm-contact" placeholder="ชื่อผู้ติดต่อ / โทร" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"></div>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeCustomerModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">ยกเลิก</button>
+      <button onclick="saveCustomerEntry()" class="flex-1 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT PICKER MODAL (FOR DOC) -->
+<div id="picker-prod-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 flex flex-col max-h-[85vh]">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-bold text-slate-800"><i class="fa-solid fa-boxes-stacked text-purple-600 mr-2"></i>เลือกสินค้าเข้าเอกสาร</h3>
+      <button onclick="closeProductPicker()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <input type="text" id="picker-prod-search" oninput="renderPickerProducts()" placeholder="ค้นหาสินค้า..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg mb-3">
+    <div class="flex-1 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100" id="picker-prod-list"></div>
+  </div>
+</div>
+
+<!-- CUSTOMER PICKER MODAL (FOR DOC) -->
+<div id="picker-cust-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 flex flex-col max-h-[85vh]">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-bold text-slate-800"><i class="fa-solid fa-users text-cyan-600 mr-2"></i>เลือกลูกค้าสำหรับเอกสารนี้</h3>
+      <button onclick="closeCustomerPicker()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <input type="text" id="picker-cust-search" oninput="renderPickerCustomers()" placeholder="ค้นหาชื่อลูกค้า..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg mb-3">
+    <div class="flex-1 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100" id="picker-cust-list"></div>
+  </div>
+</div>
+
+<!-- CASH ENTRY MODAL -->
+<div id="cash-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-slate-800"><i class="fa-solid fa-plus-circle text-blue-600 mr-2"></i>บันทึกรายการบัญชี</h3>
+      <button onclick="closeCashModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <div class="space-y-3">
+      <div class="flex gap-3">
+        <label class="flex-1 flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer hover:bg-emerald-50 transition-colors" id="lbl-income">
+          <input type="radio" name="cash-type" id="ct-income" value="income" checked class="text-emerald-600">
+          <span class="font-semibold text-emerald-700 text-sm"><i class="fa-solid fa-arrow-down mr-1"></i>รายรับ</span>
+        </label>
+        <label class="flex-1 flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer hover:bg-rose-50 transition-colors" id="lbl-expense">
+          <input type="radio" name="cash-type" id="ct-expense" value="expense" class="text-rose-600">
+          <span class="font-semibold text-rose-700 text-sm"><i class="fa-solid fa-arrow-up mr-1"></i>รายจ่าย</span>
+        </label>
+      </div>
+      <div><label class="block text-xs text-slate-500 mb-1 font-medium">วันที่</label>
+        <input type="date" id="cash-date" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <div><label class="block text-xs text-slate-500 mb-1 font-medium">รายการ</label>
+        <input type="text" id="cash-desc" placeholder="รายละเอียดรายการ..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <div><label class="block text-xs text-slate-500 mb-1 font-medium">หมวดหมู่</label>
+        <select id="cash-cat" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="รายได้จากงาน">รายได้จากงาน</option>
+          <option value="วัสดุ/อุปกรณ์">วัสดุ/อุปกรณ์</option>
+          <option value="ค่าแรง">ค่าแรง</option>
+          <option value="ค่าเดินทาง">ค่าเดินทาง</option>
+          <option value="ค่าสาธารณูปโภค">ค่าสาธารณูปโภค</option>
+          <option value="อื่นๆ">อื่นๆ</option>
+        </select>
+      </div>
+      <div><label class="block text-xs text-slate-500 mb-1 font-medium">จำนวนเงิน (บาท)</label>
+        <input type="number" id="cash-amount" placeholder="0.00" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+    </div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeCashModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">ยกเลิก</button>
+      <button onclick="saveCashEntry()" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOTTOM NAV (MOBILE) ===== -->
+<nav id="bottom-nav" class="no-print" style="padding-bottom:env(safe-area-inset-bottom,0px);">
+  <button class="bn-btn active" id="bn-doc" onclick="switchView('doc')">
+    <i class="fa-solid fa-file-invoice"></i><span>เอกสาร</span>
+  </button>
+  <button class="bn-btn" id="bn-dashboard" onclick="switchView('dashboard')">
+    <i class="fa-solid fa-chart-pie"></i><span>รายงาน</span>
+  </button>
+  <button class="bn-btn" id="bn-history" onclick="switchView('history')">
+    <i class="fa-solid fa-folder-open"></i><span>ประวัติ</span>
+  </button>
+  <button class="bn-btn" id="bn-cashbook" onclick="switchView('cashbook')">
+    <i class="fa-solid fa-book"></i><span>บัญชี</span>
+  </button>
+  <button class="bn-btn" id="bn-settings" onclick="switchView('settings')">
+    <i class="fa-solid fa-gear"></i><span>ตั้งค่า</span>
+  </button>
+</nav>
+
+<!-- Toast -->
+<div id="toast" class="fixed bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl z-50 hidden transition-all flex items-center space-x-2 text-xs font-medium border border-slate-700 no-print" style="bottom:calc(4rem + env(safe-area-inset-bottom,0px)); right:1rem; left:1rem; max-width:380px; margin:0 auto;">
+  <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+  <span id="toast-text">สำเร็จ</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT LOGIC                                             -->
+<!-- ============================================================ -->
+<script>
+// ===== STATE =====
+let docs = [];
+let products = [];
+let customers = [];
+let cashEntries = [];
+
+let activeDocId = null;
+let editingProdId = null;
+let editingCustId = null;
+
+let currentTheme = 'blue';
+let currentDocTypeKey = 'QUOTATION';
+let currentDocTypeTh = 'ใบเสนอราคา';
+let currentDocTypeEn = 'QUOTATION';
+let histFilter = 'ALL';
+
+let companySettings = {
+  name: 'Mee Flow Electric',
+  address: '56/1 ม.3 ต.ปุยุด อ.เมือง จ.ปัตตานี',
+  phone: '083-887-6542',
+  email: '-',
+  taxid: '',
+  website: '',
+  logoSrc: ''  // base64 logo stored here
+};
+
+let gasSettings = {
+  url: '',
+  sheetId: '',
+  autoSync: true,
+  syncDocs: true,
+  syncCash: true,
+  syncCustomers: true,
+  lastSync: null
+};
+
+let gasConnected = false;
+
+// ===== THEME CONFIG =====
+const THEMES = {
+  blue:    { header: 'bg-blue-800', border: 'border-t-2 border-blue-800', grand: 'bg-blue-800', titleColor: 'text-blue-800' },
+  rose:    { header: 'bg-rose-800', border: 'border-t-2 border-rose-800', grand: 'bg-rose-800', titleColor: 'text-rose-800' },
+  emerald: { header: 'bg-emerald-800', border: 'border-t-2 border-emerald-800', grand: 'bg-emerald-800', titleColor: 'text-emerald-800' },
+  slate:   { header: 'bg-slate-700', border: 'border-t-2 border-slate-700', grand: 'bg-slate-700', titleColor: 'text-slate-800' }
+};
+
+// DOC TYPES CONFIG
+const DOC_TYPES = {
+  QUOTATION:   { th: 'ใบเสนอราคา', en: 'QUOTATION', prefix: 'QT', labelNo: 'เลขที่ใบเสนอราคา:', labelDate: 'ยืนราคาถึงวันที่:' },
+  INVOICE:     { th: 'ใบแจ้งหนี้', en: 'INVOICE', prefix: 'INV', labelNo: 'เลขที่ใบแจ้งหนี้:', labelDate: 'กำหนดชำระเงิน:' },
+  RECEIPT:     { th: 'ใบเสร็จรับเงิน', en: 'RECEIPT', prefix: 'REC', labelNo: 'เลขที่ใบเสร็จรับเงิน:', labelDate: 'วันที่รับชำระ:' },
+  DELIVERY:    { th: 'ใบส่งของ / ใบแจ้งหนี้', en: 'DELIVERY NOTE / INVOICE', prefix: 'DEL', labelNo: 'เลขที่ใบส่งของ:', labelDate: 'กำหนดส่งมอบ:' },
+  TAX_INVOICE: { th: 'ใบกำกับภาษี / ใบแจ้งหนี้', en: 'TAX INVOICE / INVOICE', prefix: 'TAX', labelNo: 'เลขที่ใบกำกับภาษี:', labelDate: 'กำหนดชำระ:' },
+  WHT:         { th: 'หนังสือรับรองการหักภาษี ณ ที่จ่าย', en: 'WITHHOLDING TAX CERTIFICATE', prefix: 'WHT', labelNo: 'เลขที่เอกสาร:', labelDate: 'วันที่ยื่น:' }
+};
+
+// STATUS CONFIG
+const STATUS_CONFIG = {
+  DRAFT:     { text: '📝 ฉบับร่าง', cls: 'bg-slate-100 text-slate-700 border-slate-200' },
+  PENDING:   { text: '⏳ รออนุมัติ/รอชำระ', cls: 'bg-amber-100 text-amber-800 border-amber-200' },
+  PAID:      { text: '✅ ชำระเงินแล้ว', cls: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+  CANCELLED: { text: '❌ ยกเลิก', cls: 'bg-rose-100 text-rose-800 border-rose-200' }
+};
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded', () => {
+  loadFromStorage();        // load localStorage first
+  applySettingsToForm();    // fill settings form
+  applyLogoEverywhere();    // show logo in doc + sidebar + mobile
+  updateGASStatusUI();      // update GAS pill color
+
+  const today = new Date().toISOString().split('T')[0];
+  const docDateEl = document.getElementById('doc-date');
+  const docDueDateEl = document.getElementById('doc-duedate');
+  const cashDateEl = document.getElementById('cash-date');
+  if (docDateEl) docDateEl.value = today;
+  if (docDueDateEl) docDueDateEl.value = today;
+  if (cashDateEl) cashDateEl.value = today;
+
+  onDocTypeSelectChange('QUOTATION');
+  setTheme('blue');
+
+  if (products.length === 0) seedSampleProducts();
+  if (customers.length === 0) seedSampleCustomers();
+
+  addRow(true, 'ค่าติดตั้งเครื่องปรับอากาศ ชนิด Wall Type (ติดผนัง)');
+  addRow(false, '- ขนาด 12000 Btu พร้อมรางครอบท่อน้ำยา', 3, 5500);
+  calcTotals();
+
+  renderHistory();
+  renderProducts();
+  renderCustomers();
+  renderCashBook();
+  populateDashYear();
+  renderDashboard();
+
+  // Auto-load from GAS if URL set
+  if (gasSettings.url) {
+    setTimeout(() => loadFromGAS(), 1200);
+  }
+
+  // Preload GAS Code in guide
+  document.getElementById('gas-code-preview').textContent = GAS_CODE_TEMPLATE;
+});
+
+// ===== SIDEBAR =====
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  const isOpen = !sb.classList.contains('-translate-x-full');
+  sb.classList.toggle('-translate-x-full', isOpen);
+  ov.classList.toggle('hidden', isOpen);
+}
+
+// ===== VIEW SWITCHING =====
+function switchView(view) {
+  document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bn-btn').forEach(b => b.classList.remove('active'));
+
+  const targetView = document.getElementById('view-' + view);
+  const targetNav  = document.getElementById('nav-' + view);
+  const targetBn   = document.getElementById('bn-' + view);
+  if (targetView) targetView.classList.add('active');
+  if (targetNav)  targetNav.classList.add('active');
+  if (targetBn)   targetBn.classList.add('active');
+
+  if (view === 'dashboard') renderDashboard();
+  if (view === 'history')   renderHistory();
+  if (view === 'products')  renderProducts();
+  if (view === 'customers') renderCustomers();
+  if (view === 'cashbook')  renderCashBook();
+
+  if (window.innerWidth < 768) {
+    document.getElementById('sidebar').classList.add('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.add('hidden');
+  }
+  // Scroll main area to top on mobile
+  const ma = document.getElementById('main-area');
+  if (ma) ma.scrollTop = 0;
+}
+
+// ===== THEME =====
+function setTheme(name) {
+  currentTheme = name;
+  const t = THEMES[name] || THEMES.blue;
+  document.getElementById('tbl-header').className = `${t.header} text-white text-xs`;
+  document.getElementById('issuer-bar').className = `${t.border} pt-1.5 pb-1 text-[11px] space-y-1`;
+  document.getElementById('grand-box').className = `mt-1 p-1.5 ${t.grand} text-white rounded flex justify-between items-center shadow-sm`;
+  document.getElementById('payment-bar').className = `${t.grand} text-white rounded-t-lg px-4 py-2 flex justify-between items-center text-[10.5px]`;
+  document.getElementById('doc-title-th').className = `text-2xl font-bold tracking-tight ${t.titleColor}`;
+}
+
+// ===== DOC TYPE =====
+function onDocTypeSelectChange(key) {
+  const conf = DOC_TYPES[key] || DOC_TYPES.QUOTATION;
+  currentDocTypeKey = key;
+  currentDocTypeTh = conf.th;
+  currentDocTypeEn = conf.en;
+
+  document.getElementById('doc-title-th').innerText = conf.th;
+  document.getElementById('doc-title-en').innerText = conf.en;
+  document.getElementById('lbl-docno').innerText = conf.labelNo;
+  document.getElementById('lbl-duedate').innerText = conf.labelDate;
+
+  if (!activeDocId) {
+    document.getElementById('doc-no').value = autoDocNo(conf.prefix);
+  }
+}
+
+function autoDocNo(prefix) {
+  const d = new Date();
+  return `${prefix}-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}-${Math.floor(100+Math.random()*900)}`;
+}
+
+// ===== ITEMS TABLE =====
+function addRow(isHeader, desc='', qty='', price='') {
+  const tbody = document.getElementById('items-tbody');
+  const tr = document.createElement('tr');
+  tr.className = isHeader ? 'is-header bg-slate-100' : 'item-row hover:bg-slate-50/60';
+  
+  if (isHeader) {
+    tr.innerHTML = `
+      <td class="row-number p-1.5 text-center text-slate-400 w-9"></td>
+      <td colspan="3" class="p-1.5">
+        <textarea class="editable-input editable-textarea font-semibold text-slate-800 text-xs w-full" rows="1" placeholder="หัวข้อ / หมวดหมู่...">${desc}</textarea>
+      </td>
+      <td class="item-total p-1.5 text-right text-xs font-mono text-slate-400"></td>
+      <td class="p-1 no-print">
+        <button onclick="this.closest('tr').remove();updateRowNums();calcTotals()" class="text-slate-300 hover:text-rose-500 p-1 rounded cursor-pointer"><i class="fa-solid fa-xmark text-xs"></i></button>
+      </td>`;
+  } else {
+    tr.innerHTML = `
+      <td class="row-number p-1.5 text-center text-xs text-slate-500 w-9"></td>
+      <td class="p-1.5">
+        <textarea class="editable-input editable-textarea text-xs w-full" rows="1" placeholder="รายการสินค้า/บริการ...">${desc}</textarea>
+      </td>
+      <td class="p-1.5 w-16">
+        <input type="number" class="editable-input item-qty text-center text-xs font-mono" value="${qty}" oninput="calcTotals()">
+      </td>
+      <td class="p-1.5 w-24">
+        <input type="number" class="editable-input item-price text-right text-xs font-mono" value="${price}" oninput="calcTotals()">
+      </td>
+      <td class="item-total p-1.5 text-right text-xs font-mono font-semibold text-slate-700 w-28"></td>
+      <td class="p-1 no-print">
+        <button onclick="this.closest('tr').remove();updateRowNums();calcTotals()" class="text-slate-300 hover:text-rose-500 p-1 rounded cursor-pointer"><i class="fa-solid fa-xmark text-xs"></i></button>
+      </td>`;
+  }
+  tbody.appendChild(tr);
+  updateRowNums();
+  calcTotals();
+}
+
+function updateRowNums() {
+  let n = 1;
+  document.querySelectorAll('#items-tbody tr').forEach(r => {
+    const nc = r.querySelector('.row-number');
+    if (nc) nc.innerText = r.classList.contains('is-header') ? '' : n++;
+  });
+}
+
+// ===== CALCULATIONS =====
+function calcTotals() {
+  let sub = 0;
+  document.querySelectorAll('#items-tbody tr.item-row').forEach(r => {
+    const q = parseFloat(r.querySelector('.item-qty')?.value) || 0;
+    const p = parseFloat(r.querySelector('.item-price')?.value) || 0;
+    const t = q * p;
+    const tc = r.querySelector('.item-total');
+    if (tc) tc.innerText = fmt(t);
+    sub += t;
+  });
+
+  const discInput = parseFloat(document.getElementById('discount').value) || 0;
+  const discType = document.getElementById('discount-type').value;
+  document.getElementById('discount-unit').innerText = discType === 'PERCENT' ? '%' : 'บาท';
+
+  let discVal = 0;
+  if (discType === 'PERCENT') {
+    discVal = sub * (discInput / 100);
+  } else {
+    discVal = discInput;
+  }
+
+  const afterDisc = Math.max(0, sub - discVal);
+  const vatOn = document.getElementById('vat-on').checked;
+  const whtOn = document.getElementById('wht-on').checked;
+  
+  const vat = vatOn ? afterDisc * 0.07 : 0;
+  const whtRate = parseFloat(document.getElementById('wht-rate').value) || 3;
+  const wht = whtOn ? afterDisc * (whtRate / 100) : 0;
+  const grand = afterDisc + vat;
+  const net = grand - wht;
+
+  document.getElementById('sum-subtotal').innerText = fmt(sub);
+  document.getElementById('sum-after-discount').innerText = fmt(afterDisc);
+  document.getElementById('sum-vat').innerText = fmt(vat);
+  document.getElementById('sum-wht').innerText = `-${fmt(wht)}`;
+  document.getElementById('sum-grand').innerText = fmt(grand);
+  document.getElementById('sum-net').innerText = fmt(net);
+
+  const netRow = document.getElementById('net-row');
+  netRow.style.display = whtOn ? 'flex' : 'none';
+
+  document.getElementById('baht-text').innerText = `( ${thaiBaht(whtOn ? net : grand)} )`;
+
+  // Status Badge on Document
+  const stKey = document.getElementById('doc-status-select').value;
+  const stConf = STATUS_CONFIG[stKey] || STATUS_CONFIG.PENDING;
+  const badge = document.getElementById('doc-status-badge');
+  badge.innerText = stConf.text;
+  badge.className = `px-2 py-0.5 rounded text-[10px] font-bold border ${stConf.cls}`;
+}
+
+function fmt(n) {
+  return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ===== THAI BAHT =====
+function thaiBaht(num) {
+  if (isNaN(num) || num === 0) return 'ศูนย์บาทถ้วน';
+  num = Math.round(num * 100) / 100;
+  const parts = num.toFixed(2).split('.');
+  const nums = ['ศูนย์','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า'];
+  const units = ['','สิบ','ร้อย','พัน','หมื่น','แสน','ล้าน'];
+  function grp(s) {
+    let r = '';
+    for (let i = 0; i < s.length; i++) {
+      const d = parseInt(s[i]), pos = s.length - i - 1;
+      if (d === 0) continue;
+      if (pos === 1 && d === 1) r += 'สิบ';
+      else if (pos === 1 && d === 2) r += 'ยี่สิบ';
+      else if (pos === 0 && d === 1 && s.length > 1) r += 'เอ็ด';
+      else r += nums[d] + units[pos];
+    }
+    return r;
+  }
+  function conv(s) {
+    if (s === '0') return '';
+    let res = '';
+    while (s.length > 0) {
+      const gl = Math.min(6, s.length);
+      const chunk = s.substring(s.length - gl);
+      s = s.substring(0, s.length - gl);
+      const gt = grp(chunk);
+      res = res ? gt + 'ล้าน' + res : gt;
+    }
+    return res;
+  }
+  const bt = conv(parts[0]);
+  const st = parts[1];
+  if (!bt && st === '00') return 'ศูนย์บาทถ้วน';
+  return (bt ? bt + 'บาท' : '') + (st === '00' ? 'ถ้วน' : grp(st) + 'สตางค์');
+}
+
+// ===== LOGO / QR =====
+function uploadLogo(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    document.getElementById('logo-img').src = ev.target.result;
+    document.getElementById('logo-img').classList.remove('hidden');
+    document.getElementById('logo-ph').classList.add('hidden');
+    document.getElementById('logo-del').classList.remove('hidden');
+  };
+  r.readAsDataURL(f);
+}
+function removeLogo(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('logo-img').src = '';
+  document.getElementById('logo-img').classList.add('hidden');
+  document.getElementById('logo-ph').classList.remove('hidden');
+  document.getElementById('logo-del').classList.add('hidden');
+  const inp = document.getElementById('logo-input'); if (inp) inp.value = '';
+}
+function uploadQR(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    document.getElementById('qr-img').src = ev.target.result;
+    document.getElementById('qr-img').classList.remove('hidden');
+    document.getElementById('qr-ph').classList.add('hidden');
+    document.getElementById('qr-del').classList.remove('hidden');
+  };
+  r.readAsDataURL(f);
+}
+function removeQR(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('qr-img').src = '';
+  document.getElementById('qr-img').classList.add('hidden');
+  document.getElementById('qr-ph').classList.remove('hidden');
+  document.getElementById('qr-del').classList.add('hidden');
+  const inp = document.getElementById('qr-input'); if (inp) inp.value = '';
+}
+
+// ===== SAVE DOCUMENT =====
+function saveDoc() {
+  const docNo = document.getElementById('doc-no').value.trim();
+  if (!docNo) { showToast('กรุณาระบุเลขที่เอกสาร', 'fa-solid fa-triangle-exclamation text-amber-400'); return; }
+
+  const items = [];
+  document.querySelectorAll('#items-tbody tr').forEach(r => {
+    const ta = r.querySelector('textarea');
+    const isHdr = r.classList.contains('is-header');
+    if (ta) items.push({
+      desc: ta.value,
+      qty: isHdr ? '' : (parseFloat(r.querySelector('.item-qty')?.value) || 0),
+      price: isHdr ? '' : (parseFloat(r.querySelector('.item-price')?.value) || 0),
+      isHeader: isHdr
+    });
+  });
+
+  const grandVal = document.getElementById('sum-grand').innerText;
+  const statusKey = document.getElementById('doc-status-select').value;
+
+  const data = {
+    id: activeDocId || 'doc_' + Date.now(),
+    docTypeKey: currentDocTypeKey,
+    docType: currentDocTypeTh, docTypeEn: currentDocTypeEn,
+    status: statusKey,
+    theme: currentTheme,
+    docNo, docDate: document.getElementById('doc-date').value,
+    docDueDate: document.getElementById('doc-duedate').value,
+    docProject: document.getElementById('doc-project').value,
+    issuer: {
+      name: document.getElementById('issuer-name').value,
+      address: document.getElementById('issuer-address').value,
+      taxid: document.getElementById('issuer-taxid').value,
+      phone: document.getElementById('issuer-phone').value,
+      email: document.getElementById('issuer-email').value,
+      logoSrc: document.getElementById('logo-img').src
+    },
+    customer: {
+      name: document.getElementById('cust-name').value,
+      address: document.getElementById('cust-address').value,
+      taxid: document.getElementById('cust-taxid').value,
+      contact: document.getElementById('cust-contact').value
+    },
+    bank: {
+      name: document.getElementById('bank-name').value,
+      accName: document.getElementById('bank-accname').value,
+      accNo: document.getElementById('bank-accno').value,
+      qrSrc: document.getElementById('qr-img').src
+    },
+    remarks: document.getElementById('doc-remarks').value,
+    discount: parseFloat(document.getElementById('discount').value) || 0,
+    discountType: document.getElementById('discount-type').value,
+    vatOn: document.getElementById('vat-on').checked,
+    whtOn: document.getElementById('wht-on').checked,
+    whtRate: document.getElementById('wht-rate').value,
+    grandTotal: grandVal,
+    items,
+    savedAt: new Date().toISOString()
+  };
+
+  const idx = docs.findIndex(d => d.id === data.id);
+  if (idx >= 0) { docs[idx] = data; showToast(`อัปเดตเอกสาร ${docNo} เรียบร้อย`); }
+  else { docs.unshift(data); activeDocId = data.id; showToast(`บันทึกเอกสาร ${docNo} สำเร็จ`); }
+  
+  saveStorage();
+  updateBanner();
+  renderHistory();
+  renderDashboard();
+}
+
+// ===== LOAD DOC =====
+function loadDoc(id) {
+  const d = docs.find(x => x.id === id); if (!d) return;
+  activeDocId = d.id;
+
+  const typeKey = d.docTypeKey || 'QUOTATION';
+  document.getElementById('doc-type-select').value = typeKey;
+  onDocTypeSelectChange(typeKey);
+
+  document.getElementById('doc-status-select').value = d.status || 'PENDING';
+  if (d.theme) setTheme(d.theme);
+
+  document.getElementById('doc-no').value = d.docNo || '';
+  document.getElementById('doc-date').value = d.docDate || '';
+  document.getElementById('doc-duedate').value = d.docDueDate || '';
+  document.getElementById('doc-project').value = d.docProject || '';
+
+  if (d.issuer) {
+    document.getElementById('issuer-name').value = d.issuer.name || '';
+    document.getElementById('issuer-address').value = d.issuer.address || '';
+    document.getElementById('issuer-taxid').value = d.issuer.taxid || '';
+    document.getElementById('issuer-phone').value = d.issuer.phone || '';
+    document.getElementById('issuer-email').value = d.issuer.email || '';
+    if (d.issuer.logoSrc) {
+      document.getElementById('logo-img').src = d.issuer.logoSrc;
+      document.getElementById('logo-img').classList.remove('hidden');
+      document.getElementById('logo-ph').classList.add('hidden');
+      document.getElementById('logo-del').classList.remove('hidden');
+    } else removeLogo(null);
+  }
+
+  if (d.customer) {
+    document.getElementById('cust-name').value = d.customer.name || '';
+    document.getElementById('cust-address').value = d.customer.address || '';
+    document.getElementById('cust-taxid').value = d.customer.taxid || '';
+    document.getElementById('cust-contact').value = d.customer.contact || '';
+  }
+
+  if (d.bank) {
+    document.getElementById('bank-name').value = d.bank.name || '';
+    document.getElementById('bank-accname').value = d.bank.accName || '';
+    document.getElementById('bank-accno').value = d.bank.accNo || '';
+    if (d.bank.qrSrc) {
+      document.getElementById('qr-img').src = d.bank.qrSrc;
+      document.getElementById('qr-img').classList.remove('hidden');
+      document.getElementById('qr-ph').classList.add('hidden');
+      document.getElementById('qr-del').classList.remove('hidden');
+    } else removeQR(null);
+  }
+
+  document.getElementById('doc-remarks').value = d.remarks || '';
+  document.getElementById('discount').value = d.discount || 0;
+  document.getElementById('discount-type').value = d.discountType || 'THB';
+  document.getElementById('vat-on').checked = !!d.vatOn;
+  document.getElementById('wht-on').checked = !!d.whtOn;
+  document.getElementById('wht-rate').value = d.whtRate || 3;
+
+  document.getElementById('items-tbody').innerHTML = '';
+  (d.items || []).forEach(item => addRow(item.isHeader, item.desc, item.qty, item.price));
+  calcTotals();
+  updateBanner();
+  switchView('doc');
+  showToast(`โหลดเอกสาร ${d.docNo} เรียบร้อย`);
+}
+
+function createNew() {
+  activeDocId = null;
+  document.getElementById('items-tbody').innerHTML = '';
+  document.getElementById('doc-type-select').value = 'QUOTATION';
+  document.getElementById('doc-status-select').value = 'PENDING';
+  onDocTypeSelectChange('QUOTATION');
+  setTheme('blue');
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('doc-date').value = today;
+  document.getElementById('doc-duedate').value = today;
+  document.getElementById('doc-project').value = '';
+  document.getElementById('cust-name').value = '';
+  document.getElementById('cust-address').value = '';
+  document.getElementById('cust-taxid').value = '';
+  document.getElementById('cust-contact').value = '';
+  document.getElementById('doc-remarks').value = '';
+  document.getElementById('discount').value = 0;
+  document.getElementById('discount-type').value = 'THB';
+  document.getElementById('vat-on').checked = false;
+  document.getElementById('wht-on').checked = false;
+
+  removeLogo(null);
+  removeQR(null);
+  addRow(false, '', 1, 0);
+  calcTotals();
+  updateBanner();
+  showToast('สร้างเอกสารใหม่แล้ว');
+}
+
+function deleteDoc(id) {
+  if (!confirm('ลบเอกสารนี้? (ไม่สามารถกู้คืนได้)')) return;
+  docs = docs.filter(d => d.id !== id);
+  if (activeDocId === id) activeDocId = null;
+  saveStorage();
+  renderHistory();
+  renderDashboard();
+  updateBanner();
+  showToast('ลบเอกสารแล้ว', 'fa-solid fa-trash-can text-rose-400');
+}
+
+function updateBanner() {
+  const b = document.getElementById('edit-banner');
+  const n = document.getElementById('banner-docno');
+  if (activeDocId) {
+    const d = docs.find(x => x.id === activeDocId);
+    n.innerText = d ? d.docNo : '';
+    b.classList.remove('hidden');
+  } else b.classList.add('hidden');
+}
+
+// ===== PRODUCTS (INVENTORY) LOGIC =====
+function seedSampleProducts() {
+  products = [
+    { id: 'p_1', sku: 'P-001', name: 'แอร์ Wall Type 12,000 BTU', cat: 'เครื่องปรับอากาศ', unit: 'ชุด', price: 12500, stock: 10 },
+    { id: 'p_2', sku: 'P-002', name: 'แอร์ Wall Type 18,000 BTU', cat: 'เครื่องปรับอากาศ', unit: 'ชุด', price: 18500, stock: 5 },
+    { id: 'p_3', sku: 'P-003', name: 'สายไฟ THW 1x2.5 sq.mm (100m)', cat: 'อุปกรณ์ไฟฟ้า', unit: 'ม้วน', price: 950, stock: 20 },
+    { id: 'p_4', sku: 'S-001', name: 'ค่าบริการติดตั้งและเดินสายไฟ', cat: 'ค่าบริการ', unit: 'จุด', price: 1500, stock: 999 }
+  ];
+  saveStorage();
+}
+
+function renderProducts() {
+  const tbody = document.getElementById('products-tbody');
+  const empty = document.getElementById('products-empty');
+  const q = (document.getElementById('prod-search')?.value || '').toLowerCase();
+
+  const filtered = products.filter(p => 
+    !q || p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q)
+  );
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  tbody.innerHTML = filtered.map(p => `
+    <tr class="hover:bg-slate-50 transition-colors">
+      <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-700">${p.sku || '-'}</td>
+      <td class="px-4 py-2.5 font-medium text-slate-800">${p.name}</td>
+      <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">${p.cat || 'ทั่วไป'}</span></td>
+      <td class="px-4 py-2.5 text-right font-mono font-bold text-slate-800">฿${fmt(p.price)}</td>
+      <td class="px-4 py-2.5 text-center font-mono font-medium ${p.stock < 5 ? 'text-rose-600 font-bold' : 'text-slate-700'}">${p.stock} ${p.unit||'ชิ้น'}</td>
+      <td class="px-4 py-2.5 text-center">
+        <div class="flex items-center justify-center gap-1">
+          <button onclick="editProduct('${p.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button onclick="deleteProduct('${p.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openProductModal(id = null) {
+  editingProdId = id;
+  if (id) {
+    const p = products.find(x => x.id === id);
+    if (p) {
+      document.getElementById('pm-sku').value = p.sku || '';
+      document.getElementById('pm-name').value = p.name || '';
+      document.getElementById('pm-cat').value = p.cat || '';
+      document.getElementById('pm-unit').value = p.unit || '';
+      document.getElementById('pm-price').value = p.price || 0;
+      document.getElementById('pm-stock').value = p.stock || 0;
+    }
+  } else {
+    document.getElementById('pm-sku').value = 'P-' + Math.floor(100 + Math.random()*900);
+    document.getElementById('pm-name').value = '';
+    document.getElementById('pm-cat').value = '';
+    document.getElementById('pm-unit').value = 'ชิ้น';
+    document.getElementById('pm-price').value = '';
+    document.getElementById('pm-stock').value = 10;
+  }
+  document.getElementById('product-modal').classList.remove('hidden');
+}
+
+function closeProductModal() {
+  document.getElementById('product-modal').classList.add('hidden');
+}
+
+function saveProductEntry() {
+  const name = document.getElementById('pm-name').value.trim();
+  const price = parseFloat(document.getElementById('pm-price').value) || 0;
+  if (!name) { showToast('กรุณาระบุชื่อสินค้า', 'fa-solid fa-triangle-exclamation text-amber-400'); return; }
+
+  const data = {
+    id: editingProdId || 'prod_' + Date.now(),
+    sku: document.getElementById('pm-sku').value.trim(),
+    name,
+    cat: document.getElementById('pm-cat').value.trim(),
+    unit: document.getElementById('pm-unit').value.trim(),
+    price,
+    stock: parseInt(document.getElementById('pm-stock').value) || 0
+  };
+
+  const idx = products.findIndex(p => p.id === data.id);
+  if (idx >= 0) products[idx] = data;
+  else products.unshift(data);
+
+  saveStorage();
+  closeProductModal();
+  renderProducts();
+  showToast('บันทึกสินค้าเรียบร้อย');
+}
+
+function editProduct(id) { openProductModal(id); }
+function deleteProduct(id) {
+  if (!confirm('ลบรายการสินค้านี้?')) return;
+  products = products.filter(p => p.id !== id);
+  saveStorage();
+  renderProducts();
+  showToast('ลบสินค้าแล้ว');
+}
+
+// ===== CUSTOMER CRM LOGIC =====
+function seedSampleCustomers() {
+  customers = [
+    { id: 'c_1', name: 'บริษัท ยูไนเต็ด เอ็นจิเนียริ่ง จำกัด', address: '123/45 ถนนสุขุมวิท กรุงเทพฯ 10110', taxid: '0105560012345', contact: 'คุณสมชาย (081-234-5678)' },
+    { id: 'c_2', name: 'หจก. ปัตตานีการไฟฟ้า', address: '88/9 ต.รูสะมิแล อ.เมือง จ.ปัตตานี 94000', taxid: '0943550009876', contact: 'คุณอารีฟ (089-987-6543)' }
+  ];
+  saveStorage();
+}
+
+function renderCustomers() {
+  const tbody = document.getElementById('customers-tbody');
+  const empty = document.getElementById('customers-empty');
+  const q = (document.getElementById('cust-search')?.value || '').toLowerCase();
+
+  const filtered = customers.filter(c => 
+    !q || c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q) || c.contact.toLowerCase().includes(q)
+  );
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  tbody.innerHTML = filtered.map(c => `
+    <tr class="hover:bg-slate-50 transition-colors">
+      <td class="px-4 py-2.5 font-bold text-slate-800">${c.name}</td>
+      <td class="px-4 py-2.5 text-slate-600 text-xs">${c.address || '-'}</td>
+      <td class="px-4 py-2.5 font-mono text-xs text-slate-700">${c.taxid || '-'}</td>
+      <td class="px-4 py-2.5 text-xs text-slate-700">${c.contact || '-'}</td>
+      <td class="px-4 py-2.5 text-center">
+        <div class="flex items-center justify-center gap-1">
+          <button onclick="editCustomer('${c.id}')" class="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button onclick="deleteCustomer('${c.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openCustomerModal(id = null) {
+  editingCustId = id;
+  if (id) {
+    const c = customers.find(x => x.id === id);
+    if (c) {
+      document.getElementById('cm-name').value = c.name || '';
+      document.getElementById('cm-address').value = c.address || '';
+      document.getElementById('cm-taxid').value = c.taxid || '';
+      document.getElementById('cm-contact').value = c.contact || '';
+    }
+  } else {
+    document.getElementById('cm-name').value = '';
+    document.getElementById('cm-address').value = '';
+    document.getElementById('cm-taxid').value = '';
+    document.getElementById('cm-contact').value = '';
+  }
+  document.getElementById('customer-modal').classList.remove('hidden');
+}
+
+function closeCustomerModal() {
+  document.getElementById('customer-modal').classList.add('hidden');
+}
+
+function saveCustomerEntry() {
+  const name = document.getElementById('cm-name').value.trim();
+  if (!name) { showToast('กรุณาระบุชื่อลูกค้า', 'fa-solid fa-triangle-exclamation text-amber-400'); return; }
+
+  const data = {
+    id: editingCustId || 'cust_' + Date.now(),
+    name,
+    address: document.getElementById('cm-address').value.trim(),
+    taxid: document.getElementById('cm-taxid').value.trim(),
+    contact: document.getElementById('cm-contact').value.trim()
+  };
+
+  const idx = customers.findIndex(c => c.id === data.id);
+  if (idx >= 0) customers[idx] = data;
+  else customers.unshift(data);
+
+  saveStorage();
+  closeCustomerModal();
+  renderCustomers();
+  showToast('บันทึกข้อมูลลูกค้าเรียบร้อย');
+}
+
+function editCustomer(id) { openCustomerModal(id); }
+function deleteCustomer(id) {
+  if (!confirm('ลบลูกค้าท่านนี้?')) return;
+  customers = customers.filter(c => c.id !== id);
+  saveStorage();
+  renderCustomers();
+  showToast('ลบข้อมูลลูกค้าแล้ว');
+}
+
+// ===== PICKERS (SELECTING INTO DOCUMENT) =====
+function openProductPicker() {
+  renderPickerProducts();
+  document.getElementById('picker-prod-modal').classList.remove('hidden');
+}
+function closeProductPicker() {
+  document.getElementById('picker-prod-modal').classList.add('hidden');
+}
+function renderPickerProducts() {
+  const q = (document.getElementById('picker-prod-search')?.value || '').toLowerCase();
+  const list = document.getElementById('picker-prod-list');
+  const filtered = products.filter(p => !q || p.name.toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q));
+  
+  if (filtered.length === 0) {
+    list.innerHTML = `<p class="p-4 text-center text-xs text-slate-400">ไม่พบสินค้า</p>`;
+    return;
+  }
+  list.innerHTML = filtered.map(p => `
+    <div onclick="selectProductForDoc('${p.id}')" class="p-3 hover:bg-purple-50 cursor-pointer flex justify-between items-center transition-colors">
+      <div>
+        <span class="text-xs font-mono font-bold text-purple-700 mr-2">[${p.sku||'-'}]</span>
+        <span class="text-xs font-bold text-slate-800">${p.name}</span>
+        <p class="text-[11px] text-slate-400">${p.cat||'ทั่วไป'} · คงเหลือ ${p.stock} ${p.unit||''}</p>
+      </div>
+      <div class="text-right">
+        <span class="text-xs font-mono font-bold text-slate-900">฿${fmt(p.price)}</span>
+        <span class="block text-[10px] text-purple-600 font-semibold">+ เลือกใส่เอกสาร</span>
+      </div>
+    </div>`).join('');
+}
+
+function selectProductForDoc(id) {
+  const p = products.find(x => x.id === id); if (!p) return;
+  addRow(false, p.name, 1, p.price);
+  closeProductPicker();
+  showToast(`เพิ่ม "${p.name}" เข้าตารางแล้ว`);
+}
+
+function openCustomerPicker() {
+  renderPickerCustomers();
+  document.getElementById('picker-cust-modal').classList.remove('hidden');
+}
+function closeCustomerPicker() {
+  document.getElementById('picker-cust-modal').classList.add('hidden');
+}
+function renderPickerCustomers() {
+  const q = (document.getElementById('picker-cust-search')?.value || '').toLowerCase();
+  const list = document.getElementById('picker-cust-list');
+  const filtered = customers.filter(c => !q || c.name.toLowerCase().includes(q));
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<p class="p-4 text-center text-xs text-slate-400">ไม่พบลูกค้า</p>`;
+    return;
+  }
+  list.innerHTML = filtered.map(c => `
+    <div onclick="selectCustomerForDoc('${c.id}')" class="p-3 hover:bg-cyan-50 cursor-pointer flex justify-between items-center transition-colors">
+      <div>
+        <span class="text-xs font-bold text-slate-800 block">${c.name}</span>
+        <p class="text-[11px] text-slate-400 truncate max-w-sm">${c.address||'-'}</p>
+      </div>
+      <span class="text-xs text-cyan-600 font-semibold bg-cyan-100 px-2 py-1 rounded">ดึงข้อมูล</span>
+    </div>`).join('');
+}
+
+function selectCustomerForDoc(id) {
+  const c = customers.find(x => x.id === id); if (!c) return;
+  document.getElementById('cust-name').value = c.name || '';
+  document.getElementById('cust-address').value = c.address || '';
+  document.getElementById('cust-taxid').value = c.taxid || '';
+  document.getElementById('cust-contact').value = c.contact || '';
+  closeCustomerPicker();
+  showToast(`ดึงข้อมูลลูกค้า "${c.name}" แล้ว`);
+}
+
+// ===== HISTORY RENDER =====
+function setHistFilter(f) {
+  histFilter = f;
+  document.querySelectorAll('.hist-filter-btn').forEach(b => {
+    b.className = 'hist-filter-btn px-3 py-1 rounded text-slate-500 hover:text-slate-800';
+  });
+  const idMap = { ALL:'hf-all', 'ใบเสนอราคา':'hf-qt', 'ใบแจ้งหนี้':'hf-inv', 'ใบเสร็จรับเงิน':'hf-rec' };
+  const btn = document.getElementById(idMap[f]);
+  if (btn) btn.className = 'hist-filter-btn px-3 py-1 rounded bg-white text-blue-700 shadow-sm font-bold';
+  renderHistory();
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('hist-tbody');
+  const empty = document.getElementById('hist-empty');
+  const badge = document.getElementById('hist-count-badge');
+  const q = (document.getElementById('hist-search')?.value || '').toLowerCase();
+
+  const filtered = docs.filter(d => {
+    const mType = histFilter === 'ALL' || d.docType === histFilter;
+    const mQ = !q || (d.docNo||'').toLowerCase().includes(q) || (d.customer?.name||'').toLowerCase().includes(q) || (d.docProject||'').toLowerCase().includes(q);
+    return mType && mQ;
+  });
+
+  badge.innerText = `(${filtered.length} รายการ)`;
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  tbody.innerHTML = filtered.map(d => {
+    const stConf = STATUS_CONFIG[d.status || 'PENDING'] || STATUS_CONFIG.PENDING;
+    return `
+    <tr class="hover:bg-slate-50 transition-colors">
+      <td class="px-4 py-3">
+        <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700">${d.docType}</span>
+        <span class="ml-2 text-sm font-mono font-bold text-slate-800">${d.docNo}</span>
+      </td>
+      <td class="px-4 py-3">
+        <p class="text-sm font-medium text-slate-800">${d.customer?.name || '-'}</p>
+        <p class="text-xs text-slate-400">${d.docProject || ''}</p>
+      </td>
+      <td class="px-4 py-3">
+        <span class="px-2 py-0.5 rounded text-xs font-bold border ${stConf.cls}">${stConf.text}</span>
+      </td>
+      <td class="px-4 py-3 text-sm text-slate-500">${formatDate(d.docDate)}</td>
+      <td class="px-4 py-3 text-right text-sm font-bold font-mono text-slate-800">${d.grandTotal || '0.00'} ฿</td>
+      <td class="px-4 py-3 text-center">
+        <div class="flex items-center justify-center gap-1">
+          <button onclick="loadDoc('${d.id}')" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold">แก้ไข</button>
+          <button onclick="deleteDoc('${d.id}')" class="p-1 text-slate-400 hover:text-rose-600 rounded"><i class="fa-solid fa-trash-can text-xs"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function formatDate(s) {
+  if (!s) return '-';
+  try {
+    const d = new Date(s + 'T00:00:00');
+    return d.toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' });
+  } catch { return s; }
+}
+
+// ===== DASHBOARD =====
+function populateDashYear() {
+  const yr = document.getElementById('dash-year');
+  const years = [...new Set(docs.map(d => (d.docDate||'').slice(0,4)).filter(Boolean))];
+  const curYear = new Date().getFullYear().toString();
+  if (!years.includes(curYear)) years.unshift(curYear);
+  years.sort((a,b) => b.localeCompare(a));
+  yr.innerHTML = years.map(y => `<option value="${y}" ${y===curYear?'selected':''}>${y}</option>`).join('');
+}
+
+function renderDashboard() {
+  const year = document.getElementById('dash-year')?.value || new Date().getFullYear().toString();
+  const yearDocs = docs.filter(d => (d.docDate||'').startsWith(year));
+  
+  const moneyTypes = ['ใบแจ้งหนี้', 'ใบเสร็จรับเงิน', 'ใบกำกับภาษี / ใบแจ้งหนี้'];
+  const revenueDocs = yearDocs.filter(d => moneyTypes.includes(d.docType) && d.status !== 'CANCELLED');
+  const totalRevenue = revenueDocs.reduce((s, d) => s + parseFloat((d.grandTotal||'').replace(/,/g,'') || 0), 0);
+
+  document.getElementById('kpi-revenue').innerText = `฿${fmt(totalRevenue)}`;
+  document.getElementById('kpi-revenue-sub').innerText = `จาก ${revenueDocs.length} รายการ`;
+  document.getElementById('kpi-qt').innerText = yearDocs.filter(d => d.docType === 'ใบเสนอราคา').length;
+  document.getElementById('kpi-inv').innerText = yearDocs.filter(d => moneyTypes.includes(d.docType)).length;
+  document.getElementById('kpi-rec').innerText = yearDocs.filter(d => d.docType === 'ใบเสร็จรับเงิน').length;
+
+  // Monthly bar chart
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const monthly = Array(12).fill(0);
+  revenueDocs.forEach(d => {
+    const m = parseInt((d.docDate||'').slice(5,7)) - 1;
+    if (m >= 0 && m < 12) monthly[m] += parseFloat((d.grandTotal||'').replace(/,/g,'') || 0);
+  });
+
+  const maxVal = Math.max(...monthly, 1);
+  const chart = document.getElementById('bar-chart');
+  const lbls = document.getElementById('bar-labels');
+
+  chart.innerHTML = monthly.map((v) => `
+    <div class="flex-1 flex flex-col items-center justify-end h-full relative group">
+      <div class="absolute bottom-full mb-1 text-xs font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">฿${fmt(v)}</div>
+      <div class="bar-chart-bar w-full ${v>0?'bg-blue-600':'bg-slate-200'}" style="height:${Math.max(3,(v/maxVal)*100)}%"></div>
+    </div>`).join('');
+
+  lbls.innerHTML = months.map((m) => `
+    <div class="flex-1 text-center text-[10px] text-slate-500 font-medium pt-1">${m}</div>`).join('');
+
+  // Top customers
+  const custMap = {};
+  revenueDocs.forEach(d => {
+    const n = d.customer?.name || 'ไม่ระบุ';
+    const v = parseFloat((d.grandTotal||'').replace(/,/g,'') || 0);
+    custMap[n] = (custMap[n] || 0) + v;
+  });
+
+  const top = Object.entries(custMap).sort((a,b)=>b[1]-a[1]).slice(0, 5);
+  const topMax = top[0]?.[1] || 1;
+  document.getElementById('top-customers').innerHTML = top.length ? top.map(([name, val]) => `
+    <div>
+      <div class="flex justify-between text-sm mb-1">
+        <span class="font-medium text-slate-700 truncate">${name}</span>
+        <span class="font-bold font-mono text-slate-800 ml-2 shrink-0">฿${fmt(val)}</span>
+      </div>
+      <div class="w-full bg-slate-100 rounded-full h-2">
+        <div class="bg-blue-500 h-2 rounded-full transition-all" style="width:${(val/topMax)*100}%"></div>
+      </div>
+    </div>`).join('') : '<p class="text-sm text-slate-400 text-center py-4">ยังไม่มีข้อมูล</p>';
+}
+
+// ===== CASHBOOK =====
+function openCashModal() {
+  document.getElementById('cash-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cash-desc').value = '';
+  document.getElementById('cash-amount').value = '';
+  document.getElementById('ct-income').checked = true;
+  document.getElementById('cash-modal').classList.remove('hidden');
+}
+function closeCashModal() { document.getElementById('cash-modal').classList.add('hidden'); }
+
+function saveCashEntry() {
+  const desc = document.getElementById('cash-desc').value.trim();
+  const amount = parseFloat(document.getElementById('cash-amount').value);
+  if (!desc) { showToast('กรุณาระบุรายการ', 'fa-solid fa-triangle-exclamation text-amber-400'); return; }
+  if (!amount || amount <= 0) { showToast('กรุณาระบุจำนวนเงินให้ถูกต้อง', 'fa-solid fa-triangle-exclamation text-amber-400'); return; }
+
+  cashEntries.unshift({
+    id: 'cash_' + Date.now(),
+    type: document.getElementById('ct-income').checked ? 'income' : 'expense',
+    date: document.getElementById('cash-date').value,
+    desc,
+    cat: document.getElementById('cash-cat').value,
+    amount
+  });
+
+  saveStorage();
+  closeCashModal();
+  renderCashBook();
+  showToast('บันทึกรายการบัญชีสำเร็จ');
+}
+
+function deleteCash(id) {
+  cashEntries = cashEntries.filter(c => c.id !== id);
+  saveStorage();
+  renderCashBook();
+  showToast('ลบรายการแล้ว', 'fa-solid fa-trash-can text-rose-400');
+}
+
+function renderCashBook() {
+  const income = cashEntries.filter(c => c.type === 'income').reduce((s,c) => s+c.amount, 0);
+  const expense = cashEntries.filter(c => c.type === 'expense').reduce((s,c) => s+c.amount, 0);
+  const net = income - expense;
+
+  document.getElementById('cb-income').innerText = `฿${fmt(income)}`;
+  document.getElementById('cb-expense').innerText = `฿${fmt(expense)}`;
+  const netEl = document.getElementById('cb-net');
+  netEl.innerText = `฿${fmt(net)}`;
+  netEl.className = `text-xl font-bold ${net >= 0 ? 'text-blue-700' : 'text-rose-700'}`;
+
+  const tbody = document.getElementById('cash-tbody');
+  const empty = document.getElementById('cash-empty');
+  if (cashEntries.length === 0) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  tbody.innerHTML = cashEntries.map(c => `
+    <tr class="hover:bg-slate-50 transition-colors">
+      <td class="px-4 py-2.5 text-sm text-slate-500">${formatDate(c.date)}</td>
+      <td class="px-4 py-2.5 text-sm font-medium text-slate-800">${c.desc}</td>
+      <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">${c.cat}</span></td>
+      <td class="px-4 py-2.5 text-right text-sm font-bold ${c.type==='income'?'text-emerald-700':'text-slate-400'} font-mono">${c.type==='income' ? fmt(c.amount) : ''}</td>
+      <td class="px-4 py-2.5 text-right text-sm font-bold ${c.type==='expense'?'text-rose-700':'text-slate-400'} font-mono">${c.type==='expense' ? fmt(c.amount) : ''}</td>
+      <td class="px-4 py-2.5 text-center">
+        <button onclick="deleteCash('${c.id}')" class="text-slate-300 hover:text-rose-500 p-1 rounded transition-colors">
+          <i class="fa-solid fa-trash-can text-xs"></i>
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+// ===== SETTINGS =====
+function applySettings() {
+  companySettings.name    = document.getElementById('set-name').value.trim();
+  companySettings.address = document.getElementById('set-address').value.trim();
+  companySettings.phone   = document.getElementById('set-phone').value.trim();
+  companySettings.email   = document.getElementById('set-email').value.trim();
+  companySettings.taxid   = document.getElementById('set-taxid').value.trim();
+  companySettings.website = (document.getElementById('set-website') || {}).value?.trim() || '';
+  // logoSrc already updated by uploadSettingsLogo / removeSettingsLogo
+
+  // Push to doc form
+  const fields = ['issuer-name','issuer-address','issuer-phone','issuer-email','issuer-taxid'];
+  const vals   = [companySettings.name, companySettings.address, companySettings.phone, companySettings.email, companySettings.taxid];
+  fields.forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = vals[i]; });
+
+  // Update sidebar + mobile
+  const sbName = document.getElementById('sb-company-name');
+  if (sbName) sbName.textContent = companySettings.name || 'MeeFlow OS';
+  const mobTxt = document.getElementById('mob-title-txt');
+  if (mobTxt) mobTxt.textContent = companySettings.name || 'MeeFlow OS';
+
+  applyLogoEverywhere();
+  saveStorage();
+  showToast('บันทึกการตั้งค่าสำเร็จ ✅');
+}
+
+function applySettingsToForm() {
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  setVal('set-name',    companySettings.name);
+  setVal('set-address', companySettings.address);
+  setVal('set-phone',   companySettings.phone);
+  setVal('set-email',   companySettings.email);
+  setVal('set-taxid',   companySettings.taxid);
+  setVal('set-website', companySettings.website);
+  setVal('issuer-name',    companySettings.name);
+  setVal('issuer-address', companySettings.address);
+  setVal('issuer-phone',   companySettings.phone);
+  setVal('issuer-email',   companySettings.email);
+  setVal('issuer-taxid',   companySettings.taxid);
+  // Restore GAS settings to form
+  setVal('set-gas-url',   gasSettings.url);
+  setVal('set-sheet-id',  gasSettings.sheetId);
+  const autoSync = document.getElementById('gas-auto-sync');
+  if (autoSync) autoSync.checked = gasSettings.autoSync !== false;
+  const syncDocs = document.getElementById('gas-sync-docs');
+  if (syncDocs) syncDocs.checked = gasSettings.syncDocs !== false;
+  const syncCash = document.getElementById('gas-sync-cash');
+  if (syncCash) syncCash.checked = gasSettings.syncCash !== false;
+  const syncCust = document.getElementById('gas-sync-customers');
+  if (syncCust) syncCust.checked = gasSettings.syncCustomers !== false;
+  // Update sidebar company name
+  const sbName = document.getElementById('sb-company-name');
+  if (sbName) sbName.textContent = companySettings.name || 'MeeFlow OS';
+  // Show last sync
+  if (gasSettings.lastSync) {
+    const ls = document.getElementById('gas-last-sync');
+    const lt = document.getElementById('gas-last-sync-time');
+    if (ls) ls.classList.remove('hidden');
+    if (lt) lt.textContent = new Date(gasSettings.lastSync).toLocaleString('th-TH');
+  }
+}
+
+// ===== LOGO SETTINGS =====
+function uploadSettingsLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('ไฟล์โลโก้ใหญ่เกิน 2MB', 'fa-solid fa-triangle-exclamation text-amber-400');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    companySettings.logoSrc = ev.target.result;
+    applyLogoEverywhere();
+    saveStorage();
+    showToast('อัปโหลดโลโก้สำเร็จ ✅');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeSettingsLogo() {
+  companySettings.logoSrc = '';
+  applyLogoEverywhere();
+  const inp = document.getElementById('set-logo-input');
+  if (inp) inp.value = '';
+  saveStorage();
+  showToast('ลบโลโก้แล้ว');
+}
+
+function applyLogoEverywhere() {
+  const src = companySettings.logoSrc || '';
+
+  // Settings preview
+  const setImg = document.getElementById('set-logo-img');
+  const setPh  = document.getElementById('set-logo-ph');
+  const setDel = document.getElementById('set-logo-del-btn');
+  if (setImg) { setImg.src = src; setImg.classList.toggle('hidden', !src); }
+  if (setPh)  setPh.classList.toggle('hidden', !!src);
+  if (setDel) setDel.classList.toggle('hidden', !src);
+
+  // Doc A4 logo
+  const docImg = document.getElementById('logo-img');
+  const docPh  = document.getElementById('logo-ph');
+  const docDel = document.getElementById('logo-del');
+  if (docImg) { docImg.src = src; docImg.classList.toggle('hidden', !src); }
+  if (docPh)  docPh.classList.toggle('hidden', !!src);
+  if (docDel) docDel.classList.toggle('hidden', !src);
+
+  // Sidebar logo
+  const sbImg = document.getElementById('sb-logo-img');
+  const sbLtr = document.getElementById('sb-logo-letter');
+  const sbBox = document.getElementById('sb-logo-box');
+  if (sbImg && sbLtr) {
+    if (src) {
+      sbImg.src = src; sbImg.classList.remove('hidden');
+      sbLtr.classList.add('hidden');
+      if (sbBox) sbBox.classList.replace('bg-blue-600', 'bg-white');
+    } else {
+      sbImg.classList.add('hidden');
+      sbLtr.classList.remove('hidden');
+      if (sbBox) sbBox.classList.replace('bg-white', 'bg-blue-600');
+    }
+  }
+
+  // Mobile topbar logo
+  const mobImg = document.getElementById('mob-logo-img');
+  const mobLtr = document.getElementById('mob-logo-letter');
+  if (mobImg && mobLtr) {
+    if (src) { mobImg.src = src; mobImg.classList.remove('hidden'); mobLtr.classList.add('hidden'); }
+    else     { mobImg.classList.add('hidden'); mobLtr.classList.remove('hidden'); }
+  }
+}
+
+// ===== LOCAL STORAGE =====
+function saveStorage() {
+  try {
+    // Strip large base64 logo from docs to save space (store in companySettings only)
+    localStorage.setItem('mf_docs', JSON.stringify(docs));
+    localStorage.setItem('mf_products', JSON.stringify(products));
+    localStorage.setItem('mf_customers', JSON.stringify(customers));
+    localStorage.setItem('mf_cash', JSON.stringify(cashEntries));
+    localStorage.setItem('mf_settings', JSON.stringify(companySettings));
+    localStorage.setItem('mf_gas', JSON.stringify(gasSettings));
+  } catch (e) {
+    // If storage full, try without logo
+    try {
+      const slim = { ...companySettings, logoSrc: '' };
+      localStorage.setItem('mf_settings', JSON.stringify(slim));
+      showToast('พื้นที่จัดเก็บเกือบเต็ม (โลโก้ถูกละไว้)', 'fa-solid fa-triangle-exclamation text-amber-400');
+    } catch (e2) { console.error('Storage full:', e2); }
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const d = localStorage.getItem('mf_docs');      if (d) docs = JSON.parse(d);
+    const p = localStorage.getItem('mf_products');  if (p) products = JSON.parse(p);
+    const c = localStorage.getItem('mf_customers'); if (c) customers = JSON.parse(c);
+    const ca = localStorage.getItem('mf_cash');     if (ca) cashEntries = JSON.parse(ca);
+    const s = localStorage.getItem('mf_settings');  if (s) companySettings = { ...companySettings, ...JSON.parse(s) };
+    const g = localStorage.getItem('mf_gas');       if (g) gasSettings = { ...gasSettings, ...JSON.parse(g) };
+  } catch (e) { console.error('Load storage error:', e); }
+}
+
+// ===== GAS CODE TEMPLATE =====
+const GAS_CODE_TEMPLATE = `// ============================================================
+// MeeFlow OS - Code.gs  (Google Apps Script)
+// วาง Code นี้ใน Apps Script แล้ว Deploy เป็น Web App
+// ============================================================
+const SS_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+
+function doGet(e) {
+  return handleRequest(e);
+}
+function doPost(e) {
+  return handleRequest(e);
+}
+
+function handleRequest(e) {
+  const CORS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
+  };
+  try {
+    const params = e.parameter || {};
+    const action = params.action || (e.postData ? JSON.parse(e.postData.contents).action : 'ping');
+    const body   = e.postData ? JSON.parse(e.postData.contents) : {};
+
+    let result = {};
+    if (action === 'ping')            result = { ok: true, message: 'MeeFlow GAS Connected ✅', ts: new Date().toISOString() };
+    else if (action === 'saveAll')    result = saveAll(body);
+    else if (action === 'loadAll')    result = loadAll();
+    else if (action === 'saveDocs')   result = saveSheet('DOCS', body.docs || [], DOC_HEADERS, docToRow, rowToDoc);
+    else if (action === 'saveCash')   result = saveSheet('CASH', body.cash || [], CASH_HEADERS, cashToRow, rowToCash);
+    else if (action === 'saveCustomers') result = saveSheet('CUSTOMERS', body.customers || [], CUST_HEADERS, custToRow, rowToCust);
+    else result = { ok: false, message: 'Unknown action: ' + action };
+
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ── Headers ──
+const DOC_HEADERS  = ['id','docType','docNo','status','docDate','docDueDate','docProject','custName','custAddress','custTaxid','grandTotal','savedAt','itemsJSON'];
+const CASH_HEADERS = ['id','type','date','desc','cat','amount','savedAt'];
+const CUST_HEADERS = ['id','name','address','taxid','contact','savedAt'];
+
+// ── Row converters ──
+const docToRow  = d => [d.id,d.docType,d.docNo,d.status||'PENDING',d.docDate,d.docDueDate||'',d.docProject||'',d.customer?.name||'',d.customer?.address||'',d.customer?.taxid||'',d.grandTotal||'0',d.savedAt||new Date().toISOString(),JSON.stringify(d.items||[])];
+const rowToDoc  = r => ({ id:r[0],docType:r[1],docNo:r[2],status:r[3],docDate:r[4],docDueDate:r[5],docProject:r[6],customer:{name:r[7],address:r[8],taxid:r[9]},grandTotal:r[10],savedAt:r[11],items:JSON.parse(r[12]||'[]') });
+const cashToRow = c => [c.id,c.type,c.date,c.desc,c.cat,c.amount,c.savedAt||new Date().toISOString()];
+const rowToCash = r => ({ id:r[0],type:r[1],date:r[2],desc:r[3],cat:r[4],amount:parseFloat(r[5])||0,savedAt:r[6] });
+const custToRow = c => [c.id,c.name,c.address||'',c.taxid||'',c.contact||'',c.savedAt||new Date().toISOString()];
+const rowToCust = r => ({ id:r[0],name:r[1],address:r[2],taxid:r[3],contact:r[4],savedAt:r[5] });
+
+function getOrCreateSheet(name, headers) {
+  const ss = SpreadsheetApp.openById(SS_ID);
+  let sh = ss.getSheetByName(name);
+  if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); sh.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff'); }
+  return sh;
+}
+
+function saveSheet(name, dataArr, headers, toRow) {
+  const sh = getOrCreateSheet(name, headers);
+  sh.clearContents();
+  sh.appendRow(headers);
+  sh.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  if (dataArr.length > 0) {
+    const rows = dataArr.map(toRow);
+    sh.getRange(2,1,rows.length,headers.length).setValues(rows);
+  }
+  return { ok: true, saved: dataArr.length, sheet: name };
+}
+
+function loadSheet(name, headers, fromRow) {
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sh = ss.getSheetByName(name);
+  if (!sh || sh.getLastRow() < 2) return [];
+  const rows = sh.getRange(2,1,sh.getLastRow()-1,headers.length).getValues();
+  return rows.filter(r => r[0]).map(fromRow);
+}
+
+function saveAll(body) {
+  const r1 = body.docs      ? saveSheet('DOCS',      body.docs,      DOC_HEADERS,  docToRow)  : {ok:true,skipped:true};
+  const r2 = body.cash      ? saveSheet('CASH',      body.cash,      CASH_HEADERS, cashToRow) : {ok:true,skipped:true};
+  const r3 = body.customers ? saveSheet('CUSTOMERS', body.customers, CUST_HEADERS, custToRow) : {ok:true,skipped:true};
+  return { ok: true, docs: r1, cash: r2, customers: r3, ts: new Date().toISOString() };
+}
+
+function loadAll() {
+  return {
+    ok: true,
+    docs:      loadSheet('DOCS',      DOC_HEADERS,  rowToDoc),
+    cash:      loadSheet('CASH',      CASH_HEADERS, rowToCash),
+    customers: loadSheet('CUSTOMERS', CUST_HEADERS, rowToCust),
+    ts: new Date().toISOString()
+  };
+}`;
+
+// ===== GAS FUNCTIONS =====
+function saveGASSettings() {
+  const urlEl = document.getElementById('set-gas-url');
+  const sheetEl = document.getElementById('set-sheet-id');
+  const url = (urlEl ? urlEl.value.trim() : '');
+  if (!url) { showToast('กรุณาใส่ GAS Web App URL', 'fa-solid fa-triangle-exclamation text-amber-400'); return; }
+  gasSettings.url        = url;
+  gasSettings.sheetId    = sheetEl ? sheetEl.value.trim() : '';
+  gasSettings.autoSync   = document.getElementById('gas-auto-sync')?.checked !== false;
+  gasSettings.syncDocs   = document.getElementById('gas-sync-docs')?.checked !== false;
+  gasSettings.syncCash   = document.getElementById('gas-sync-cash')?.checked !== false;
+  gasSettings.syncCustomers = document.getElementById('gas-sync-customers')?.checked !== false;
+  saveStorage();
+  showToast('บันทึก GAS URL สำเร็จ — กด "ทดสอบ" เพื่อตรวจสอบ');
+  updateGASStatusUI();
+}
+
+function testGASConnection() {
+  const url = (document.getElementById('set-gas-url') || {}).value?.trim() || gasSettings.url;
+  if (!url) { showToast('กรุณาใส่ GAS URL ก่อน', 'fa-solid fa-triangle-exclamation text-amber-400'); return; }
+  setGASStatus('syncing', 'กำลังทดสอบ...');
+  showToast('กำลังทดสอบการเชื่อมต่อ...', 'fa-solid fa-spinner animate-spin text-blue-400');
+  fetch(url + '?action=ping', { method: 'GET' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        gasConnected = true;
+        gasSettings.url = url;
+        saveStorage();
+        setGASStatus('connected', 'เชื่อมต่อ Google Sheets แล้ว ✅');
+        showToast('✅ เชื่อมต่อ GAS สำเร็จ! ' + (data.message || ''));
+      } else {
+        throw new Error(data.message || 'Response not ok');
+      }
+    })
+    .catch(err => {
+      gasConnected = false;
+      setGASStatus('disconnected', 'เชื่อมต่อไม่สำเร็จ');
+      showToast('❌ เชื่อมต่อ GAS ไม่สำเร็จ: ' + err.message, 'fa-solid fa-triangle-exclamation text-rose-400');
+    });
+}
+
+function syncToGAS(what) {
+  if (!gasSettings.url) {
+    showToast('ยังไม่ได้ตั้งค่า GAS URL — ไปที่ ตั้งค่า → Google Sheets', 'fa-solid fa-circle-info text-amber-400');
+    return;
+  }
+  const payload = { action: 'saveAll' };
+  if (gasSettings.syncDocs)      payload.docs      = docs;
+  if (gasSettings.syncCash)      payload.cash      = cashEntries;
+  if (gasSettings.syncCustomers) payload.customers = customers;
+
+  setGASStatus('syncing', 'กำลังซิงค์...');
+  showToast('กำลังซิงค์ข้อมูลขึ้น Google Sheets...', 'fa-solid fa-cloud-arrow-up text-blue-400');
+
+  const btnSync = document.getElementById('btn-sync-all');
+  if (btnSync) { btnSync.disabled = true; btnSync.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> กำลังซิงค์...'; }
+
+  fetch(gasSettings.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        gasConnected = true;
+        gasSettings.lastSync = new Date().toISOString();
+        saveStorage();
+        setGASStatus('connected', 'ซิงค์สำเร็จ ✅');
+        showToast(`✅ ซิงค์ขึ้น Google Sheets สำเร็จ (${new Date().toLocaleTimeString('th-TH')})`);
+        // Update last sync display
+        const ls = document.getElementById('gas-last-sync');
+        const lt = document.getElementById('gas-last-sync-time');
+        if (ls) ls.classList.remove('hidden');
+        if (lt) lt.textContent = new Date(gasSettings.lastSync).toLocaleString('th-TH');
+      } else throw new Error(data.error || 'Unknown error');
+    })
+    .catch(err => {
+      gasConnected = false;
+      setGASStatus('disconnected', 'ซิงค์ไม่สำเร็จ');
+      showToast('❌ ซิงค์ GAS ไม่สำเร็จ: ' + err.message, 'fa-solid fa-triangle-exclamation text-rose-400');
+    })
+    .finally(() => {
+      if (btnSync) { btnSync.disabled = false; btnSync.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> ซิงค์ข้อมูลทั้งหมด'; }
+    });
+}
+
+function loadFromGAS() {
+  if (!gasSettings.url) {
+    showToast('ยังไม่ได้ตั้งค่า GAS URL', 'fa-solid fa-circle-info text-amber-400');
+    return;
+  }
+  setGASStatus('syncing', 'กำลังโหลด...');
+  showToast('กำลังโหลดข้อมูลจาก Google Sheets...', 'fa-solid fa-cloud-arrow-down text-emerald-400');
+
+  fetch(gasSettings.url + '?action=loadAll', { method: 'GET' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        let changed = false;
+        if (data.docs && Array.isArray(data.docs) && data.docs.length > 0) {
+          docs = data.docs; changed = true;
+        }
+        if (data.cash && Array.isArray(data.cash) && data.cash.length > 0) {
+          cashEntries = data.cash; changed = true;
+        }
+        if (data.customers && Array.isArray(data.customers) && data.customers.length > 0) {
+          customers = data.customers; changed = true;
+        }
+        if (changed) {
+          saveStorage();
+          renderHistory(); renderCashBook(); renderCustomers();
+          populateDashYear(); renderDashboard();
+          gasConnected = true;
+          gasSettings.lastSync = new Date().toISOString();
+          saveStorage();
+          setGASStatus('connected', 'โหลดจาก Cloud สำเร็จ ✅');
+          showToast(`✅ โหลดข้อมูลจาก Google Sheets สำเร็จ (${docs.length} เอกสาร)`);
+        } else {
+          setGASStatus('connected', 'เชื่อมต่อแล้ว (ข้อมูลว่าง)');
+          showToast('เชื่อมต่อสำเร็จ — ยังไม่มีข้อมูลใน Sheets');
+        }
+      } else throw new Error(data.error || 'Response not ok');
+    })
+    .catch(err => {
+      gasConnected = false;
+      setGASStatus('disconnected', 'โหลดไม่สำเร็จ');
+      showToast('❌ โหลดจาก GAS ไม่สำเร็จ: ' + err.message, 'fa-solid fa-triangle-exclamation text-rose-400');
+    });
+}
+
+function setGASStatus(state, label) {
+  const pills = ['gas-status-pill', 'gas-status-pill2'];
+  const icons = { connected: 'fa-solid fa-circle-check', syncing: 'fa-solid fa-spinner animate-spin', disconnected: 'fa-solid fa-circle-xmark' };
+  const classes = { connected: 'gas-connected', syncing: 'gas-syncing', disconnected: 'gas-disconnected' };
+  pills.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = `${classes[state]} text-[11px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1.5`;
+    el.innerHTML = `<i class="${icons[state]} text-[10px]"></i> ${label}`;
+  });
+}
+
+function updateGASStatusUI() {
+  if (gasSettings.url) {
+    setGASStatus('disconnected', 'มี URL แต่ยังไม่ได้ทดสอบ');
+  } else {
+    setGASStatus('disconnected', 'ไม่ได้เชื่อม Google Sheets');
+  }
+}
+
+// GAS Guide toggle
+function toggleGASGuide() {
+  const box = document.getElementById('gas-guide-box');
+  const txt = document.getElementById('gas-guide-toggle-txt');
+  if (!box) return;
+  const hidden = box.classList.toggle('hidden');
+  if (txt) txt.textContent = hidden ? 'ดูวิธีตั้งค่า Google Apps Script ▾' : 'ซ่อนคำแนะนำ ▴';
+}
+function showGASGuide() {
+  const box = document.getElementById('gas-guide-box');
+  if (box) box.classList.remove('hidden');
+  const txt = document.getElementById('gas-guide-toggle-txt');
+  if (txt) txt.textContent = 'ซ่อนคำแนะนำ ▴';
+  document.getElementById('gas-guide-box')?.scrollIntoView({ behavior: 'smooth' });
+}
+function copyGASCode() {
+  const code = document.getElementById('gas-code-preview')?.textContent || GAS_CODE_TEMPLATE;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => showToast('คัดลอกโค้ด Code.gs แล้ว ✅'));
+  } else {
+    // Fallback for iOS
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); showToast('คัดลอกโค้ด Code.gs แล้ว ✅'); } catch {}
+    document.body.removeChild(ta);
+  }
+}
+
+function clearAllData() {
+  if (!confirm('ลบข้อมูลทั้งหมด? (เอกสาร + สต็อก + ลูกค้า + บัญชี) — ไม่สามารถกู้คืนได้')) return;
+  docs = []; products = []; customers = []; cashEntries = [];
+  localStorage.clear();
+  activeDocId = null;
+  renderHistory(); renderProducts(); renderCustomers(); renderCashBook(); renderDashboard(); updateBanner();
+  showToast('ล้างข้อมูลทั้งหมดแล้ว', 'fa-solid fa-trash-can text-rose-400');
+}
+
+// ===== EXCEL EXPORTS (.XLSX) =====
+function exportHistoryExcel() {
+  if (docs.length === 0) { showToast('ไม่มีข้อมูลเอกสารที่จะส่งออก', 'fa-solid fa-circle-info text-amber-400'); return; }
+  const data = docs.map(d => ({
+    'ประเภทเอกสาร': d.docType,
+    'เลขที่เอกสาร': d.docNo,
+    'สถานะ': STATUS_CONFIG[d.status || 'PENDING']?.text || 'รอชำระ',
+    'วันที่': d.docDate,
+    'นามลูกค้า': d.customer?.name || '',
+    'ชื่องาน': d.docProject || '',
+    'ยอดเงินรวมทั้งสิ้น (บาท)': d.grandTotal
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ประวัติเอกสาร');
+  XLSX.writeFile(wb, `MeeFlow_Documents_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('ส่งออกไฟล์ Excel สำเร็จ');
+}
+
+function exportCashbookExcel() {
+  if (cashEntries.length === 0) { showToast('ไม่มีข้อมูลบัญชีที่จะส่งออก', 'fa-solid fa-circle-info text-amber-400'); return; }
+  const data = cashEntries.map(c => ({
+    'วันที่': c.date,
+    'ประเภท': c.type === 'income' ? 'รายรับ' : 'รายจ่าย',
+    'รายการ': c.desc,
+    'หมวดหมู่': c.cat,
+    'จำนวนเงิน (บาท)': c.amount
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'บัญชีรายรับรายจ่าย');
+  XLSX.writeFile(wb, `MeeFlow_Cashbook_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('ส่งออกไฟล์ Excel สำเร็จ');
+}
+
+// ===== JSON BACKUP =====
+function exportJSON() {
+  if (docs.length === 0 && cashEntries.length === 0) { showToast('ยังไม่มีข้อมูลให้สำรอง', 'fa-solid fa-circle-info text-amber-400'); return; }
+  const payload = { docs, products, customers, cashEntries, companySettings, exportedAt: new Date().toISOString() };
+  const url = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `meeflow_backup_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  showToast('สำรองข้อมูล JSON สำเร็จ');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.docs && Array.isArray(data.docs)) {
+        docs = data.docs;
+        if (data.products) products = data.products;
+        if (data.customers) customers = data.customers;
+        if (data.cashEntries) cashEntries = data.cashEntries;
+        if (data.companySettings) companySettings = data.companySettings;
+
+        saveStorage();
+        renderHistory(); renderProducts(); renderCustomers(); renderCashBook(); renderDashboard(); populateDashYear();
+        showToast(`นำเข้าข้อมูลสำเร็จ ${docs.length} เอกสาร`);
+      } else {
+        showToast('รูปแบบไฟล์ไม่ถูกต้อง', 'fa-solid fa-triangle-exclamation text-rose-400');
+      }
+    } catch { showToast('เกิดข้อผิดพลาดในการอ่านไฟล์', 'fa-solid fa-triangle-exclamation text-rose-400'); }
+  };
+  r.readAsText(file);
+  event.target.value = '';
+}
+
+// ===== PDF EXPORT =====
+function downloadPDF() {
+  const btn = document.getElementById('btn-pdf');
+  const el = document.getElementById('a4-paper');
+  const docNo = document.getElementById('doc-no').value || 'document';
+
+  showToast('กำลังสร้าง PDF...', 'fa-solid fa-spinner animate-spin text-blue-400');
+  if (btn) btn.disabled = true;
+  document.body.classList.add('pdf-exporting');
+
+  if (typeof html2pdf === 'undefined') {
+    document.body.classList.remove('pdf-exporting');
+    if (btn) btn.disabled = false;
+    window.print();
+    return;
+  }
+
+  html2pdf().set({
+    margin: 0,
+    filename: `${currentDocTypeTh}_${docNo}.pdf`,
+    image: { type: 'jpeg', quality: 0.97 },
+    html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: 'avoid-all' }
+  }).from(el).save().then(() => {
+    document.body.classList.remove('pdf-exporting');
+    if (btn) btn.disabled = false;
+    showToast('ดาวน์โหลด PDF สำเร็จ');
+  }).catch(() => {
+    document.body.classList.remove('pdf-exporting');
+    if (btn) btn.disabled = false;
+    window.print();
+  });
+}
+
+// ===== TOAST =====
+let toastTimer = null;
+function showToast(msg, iconCls = 'fa-solid fa-circle-check text-emerald-400') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-text').innerText = msg;
+  document.getElementById('toast-icon').className = iconCls + ' text-base';
+  t.classList.remove('hidden');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 3000);
+}
+</script>
+</body>
+</html>
